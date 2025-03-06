@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "GourdMobile",
+    "slug": "GourdMobile",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-dev-client"
+    ],
+    "splash": {
+      "image": "./assets/logoNBG.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#fff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logoNBG.png",
+        "backgroundColor": "#fff"
+      },
+      "package": "com.kaylamae.GourdMobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "gourdmobile",
+    "assetBundlePatterns": [
+      "screens/**/*"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e2501521-b10f-4d82-bc5d-fe3b3685d487"
+      }
+    }
+  }
+}
