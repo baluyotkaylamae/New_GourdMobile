@@ -9,6 +9,7 @@ import {
   Modal,
   TouchableOpacity,
   Image,
+  TextInput,
 } from "react-native";
 import EasyButton from "../Shared/StyledComponents/EasyButton";
 import baseURL from "../assets/common/baseurl";
@@ -22,7 +23,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
 import mime from "mime";
 import Toast from "react-native-toast-message";
-
 const MonitoringScreen = () => {
   const context = useContext(AuthGlobal);
   const userId = context.stateUser.user?.userId;
@@ -50,6 +50,7 @@ const MonitoringScreen = () => {
     fruitHarvestedImages: [], // Ensure this is an array
     dateOfFinalization: new Date(),
     status: "In Progress",
+    plotNo: "", // Added Plot No
   });
 
   const statusOptions = [
@@ -169,6 +170,7 @@ const MonitoringScreen = () => {
     formData.append("fruitsHarvested", monitoringData.fruitsHarvested);
     formData.append("dateOfFinalization", monitoringData.dateOfFinalization ? new Date(monitoringData.dateOfFinalization).toISOString() : new Date().toISOString());
     formData.append("status", monitoringData.status);
+    formData.append("plotNo", monitoringData.plotNo); // Added Plot No
 
     // Append pollinated flower images
     (monitoringData.pollinatedFlowerImages || []).forEach((imageUri, index) => {
@@ -222,6 +224,7 @@ const MonitoringScreen = () => {
           fruitHarvestedImages: [],
           dateOfFinalization: new Date(),
           status: "In Progress",
+          plotNo: "", // Reset Plot No
         });
 
         setTimeout(() => {
@@ -241,7 +244,6 @@ const MonitoringScreen = () => {
     }
   };
 
-
   // Function to update monitoring with images
   const updateMonitoring = async (id) => {
     console.log("Monitoring ID:", id);
@@ -258,6 +260,7 @@ const MonitoringScreen = () => {
     formData.append("fruitsHarvested", monitoringData.fruitsHarvested);
     formData.append("dateOfFinalization", monitoringData.dateOfFinalization ? new Date(monitoringData.dateOfFinalization).toISOString() : new Date().toISOString());
     formData.append("status", status); // Updated status logic
+
 
     // Append new pollinated flower images
     // Append fruit harvested images
@@ -289,8 +292,6 @@ const MonitoringScreen = () => {
     }
   };
 
-
-
   const deleteMonitoring = async (id) => {
     try {
       const storedToken = await AsyncStorage.getItem("jwt");
@@ -317,6 +318,7 @@ const MonitoringScreen = () => {
       fruitsHarvested: "",
       dateOfFinalization: finalizationDate,
       status: "In Progress",
+      plotNo: "", // Reset Plot No
     });
   };
 
@@ -412,6 +414,9 @@ const MonitoringScreen = () => {
             </Text>
             <Text style={styles.description}>
               {new Date(item.dateOfPollination).toDateString()}
+            </Text>
+            <Text style={styles.description}>
+              Plot No: {item.plotNo || "N/A"}
             </Text>
             <Text
               style={[
@@ -549,6 +554,14 @@ const MonitoringScreen = () => {
               </TouchableOpacity>
             </View>
 
+            <Text>Plot No</Text>
+            <TextInput
+              style={styles.input}
+              value={monitoringData.plotNo}
+              onChangeText={(text) => setMonitoringData({ ...monitoringData, plotNo: text })}
+              placeholder="Enter Plot No"
+            />
+
             <View style={styles.buttonRow}>
               <EasyButton medium primary onPress={addMonitoring}>
                 <Text style={{ color: "white", fontWeight: "bold" }}>Create</Text>
@@ -568,6 +581,7 @@ const MonitoringScreen = () => {
           />
         )}
       </Modal>
+
       {/* Edit Modal */}
       <Modal
         animationType="slide"

@@ -34,6 +34,7 @@ const MonitoringTab = ({ data, onUpdate }) => {
     <View style={styles.monitoringCard}>
       <Text style={styles.monitoringTitle}>{item.gourdType.name}</Text>
       <Text style={styles.monitoringDetail}>Variety: {item.variety.name}</Text>
+      <Text style={styles.monitoringDetail}>Plot No: {item.plotNo}</Text>
       <Text style={styles.monitoringDetail}>Pollinated Flowers: {item.pollinatedFlowers}</Text>
       <Text style={styles.monitoringDetail}>Fruits Harvested: {item.fruitsHarvested}</Text>
       <Text style={styles.monitoringDetail}>Date of Pollination: {new Date(item.dateOfPollination).toLocaleDateString()}</Text>

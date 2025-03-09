@@ -34,7 +34,7 @@ const Login = (props) => {
   // Navigate to UserProfile after successful login
   useEffect(() => {
     if (context && context.stateUser && context.stateUser.isAuthenticated) {
-      navigation.navigate("User Profile");  
+      navigation.navigate("User Profile");
     }
   }, [context.stateUser.isAuthenticated, navigation]);
 
@@ -44,6 +44,8 @@ const Login = (props) => {
       password,
     };
 
+    console.log("Submitting login with user:", user); // Log the user data being submitted
+
     if (email === "" || password === "") {
       setError("Please fill in your credentials");
     } else if (context && context.dispatch) {
@@ -51,9 +53,7 @@ const Login = (props) => {
     } else {
       console.error('Context or Dispatch is undefined');
     }
-    console.log('na')
   };
-
   const handleGoogleSignIn = () => {
     if (request) {
       promptAsync();
