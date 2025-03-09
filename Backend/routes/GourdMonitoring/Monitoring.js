@@ -44,6 +44,7 @@ router.post('/', upload.array("pollinatedFlowerImages"), async (req, res) => {
             fruitsHarvested,
             dateOfFinalization,
             status,
+            plotNo, // Added Plot No.
         } = req.body;
 
         // Ensure dateOfPollination is present
@@ -94,6 +95,7 @@ router.post('/', upload.array("pollinatedFlowerImages"), async (req, res) => {
             fruitHarvestedImages,
             dateOfFinalization: validatedDateOfFinalization,
             status: status || 'In Progress',
+            plotNo,  // Added Plot No.
         });
 
         await newMonitoring.save();

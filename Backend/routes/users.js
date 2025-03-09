@@ -80,6 +80,10 @@ router.post('/login', async (req, res) => {
             { expiresIn: '1d' }
         );
 
+        console.log("User:", user); // Log the user
+        console.log("Secret:", secret); // Log the secret
+        console.log("Token:", token); // Log the token
+
         // Update online status when user logs in
         await updateOnlineStatus(user.id, true);
 
