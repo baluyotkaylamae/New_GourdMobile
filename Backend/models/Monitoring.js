@@ -8,7 +8,7 @@ const monitoringSchema = new mongoose.Schema({
   },
   plotNo: {
     type: String,
-    required: true,
+    
   },
   gourdType: {
     type: mongoose.Schema.Types.ObjectId,
