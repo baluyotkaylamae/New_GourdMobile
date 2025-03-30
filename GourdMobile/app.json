@@ -7,7 +7,10 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "plugins": [
-      "expo-dev-client"
+      "expo-dev-client",
+     ["expo-notifications", {
+        "icon": "./assets/logoNBG.png"
+      }]
     ],
     "splash": {
       "image": "./assets/logoNBG.png",
