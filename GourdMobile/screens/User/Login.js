@@ -11,6 +11,7 @@ import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
 import Header from "../../Shared/Header";
 import WelcomeLogin from "../../Shared/WelcomeLogin";
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 
 // Import Google logo
 import googleLogo from "../../assets/google.png"; // Adjust the path as necessary
@@ -38,22 +39,25 @@ const Login = (props) => {
     }
   }, [context.stateUser.isAuthenticated, navigation]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const user = {
       email,
       password,
     };
-
-    console.log("Submitting login with user:", user); // Log the user data being submitted
-
+  
     if (email === "" || password === "") {
       setError("Please fill in your credentials");
     } else if (context && context.dispatch) {
-      loginUser(user, context.dispatch);
+      const response = await loginUser(user, context.dispatch); // Assuming loginUser returns a token
+      if (response && response.token) {
+        await AsyncStorage.setItem('jwt', response.token); // Store the token
+        console.log("Token saved to AsyncStorage:", response.token);
+      }
     } else {
       console.error('Context or Dispatch is undefined');
     }
   };
+  
   const handleGoogleSignIn = () => {
     if (request) {
       promptAsync();
@@ -168,3 +172,4 @@ const styles = StyleSheet.create({
 });
 
 export default Login;
+

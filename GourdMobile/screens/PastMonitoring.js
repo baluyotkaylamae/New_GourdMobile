@@ -111,50 +111,13 @@ const PastMonitoring = () => {
       const response = await axios.get(`${baseURL}Monitoring`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
-  
+
       const today = new Date();
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(today.getDate() - 7);
-  
-      const updatedData = await Promise.all(
-        response.data.map(async (item) => {
-          const finalizationDate = new Date(item.dateOfFinalization);
-          const isMoreThanSevenDays = finalizationDate <= sevenDaysAgo;
-  
-          // Update status to "Completed" or "Failed" based on the conditions after 7 days
-          if (item.userID._id === userId && isMoreThanSevenDays) {
-            if (item.fruitsHarvested > 0 && item.status !== "Completed") {
-              try {
-                await axios.put(
-                  `${baseURL}Monitoring/${item._id}`,
-                  { status: "Completed" },
-                  { headers: { Authorization: `Bearer ${storedToken}` } }
-                );
-              } catch (error) {
-                console.error(`Error updating status to Completed for item ${item._id}:`, error);
-              }
-              return { ...item, status: "Completed" };
-            }
-  
-            if (item.fruitsHarvested === 0 && item.status !== "Failed") {
-              try {
-                await axios.put(
-                  `${baseURL}Monitoring/${item._id}`,
-                  { status: "Failed" },
-                  { headers: { Authorization: `Bearer ${storedToken}` } }
-                );
-              } catch (error) {
-                console.error(`Error updating status to Failed for item ${item._id}:`, error);
-              }
-              return { ...item, status: "Failed" };
-            }
-          }
-          return item;
-        })
-      );
-  
+
       // Filter data into different tabs based on status and dates
-      const currentData = updatedData.filter(item => {
+      const currentData = response.data.filter(item => {
         const finalizationDate = new Date(item.dateOfFinalization);
         return (
           item.userID._id === userId &&
@@ -163,18 +126,18 @@ const PastMonitoring = () => {
           item.status === "In Progress"
         );
       });
-  
-      const pastData = updatedData.filter(item => {
+
+      const pastData = response.data.filter(item => {
         return (
           item.userID._id === userId &&
           item.status === "Completed"
         );
       });
-  
-      const failedData = updatedData.filter(item => {
+
+      const failedData = response.data.filter(item => {
         return item.userID._id === userId && item.status === "Failed";
       });
-  
+
       setMonitoringData(currentData);
       setPastMonitoringData(pastData);
       setFailedMonitoringData(failedData);
@@ -184,8 +147,6 @@ const PastMonitoring = () => {
       setLoading(false);
     }
   };
-  
-  
 
   useFocusEffect(
     useCallback(() => {
@@ -334,9 +295,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center', // Center the buttons horizontally
     alignItems: 'center', // Align the buttons vertically
-    gap: 10, // Add spacing between buttons (use margin if `gap` is unsupported)
+    gap: 10, // Add spacing between buttons (use margin if gap is unsupported)
     marginTop: 15,
   },
 });
 
 export default PastMonitoring;
+
+

@@ -6,7 +6,6 @@ import baseURL from "../../assets/common/baseurl";
 export const SET_CURRENT_USER = "SET_CURRENT_USER";
 
 export const loginUser = (user, dispatch) => {
-    console.log("Sending login request with user:", user); // Log the user data being sent
     fetch(`${baseURL}users/login`, {
         method: "POST",
         body: JSON.stringify(user),
@@ -15,43 +14,25 @@ export const loginUser = (user, dispatch) => {
             "Content-Type": "application/json",
         },
     })
-    .then((res) => {
-        console.log("Response status:", res.status); // Log the response status
-        return res.json();
-    })
+    .then((res) => res.json())
     .then((data) => {
-        console.log("Response data:", data); // Log the response data
         if (data && data.token) {
             const token = data.token;
-            console.log("Token received:", token); // Log the token
-            AsyncStorage.setItem("jwt", token);
+            AsyncStorage.setItem("jwt", token); // Save the token
             try {
-                const decoded = jwtDecode(token);
-                console.log("Decoded token:", decoded); // Log the decoded token
-                dispatch(setCurrentUser(decoded, user));
+                const decoded = jwtDecode(token); // Decode the token
+                dispatch(setCurrentUser(decoded, user)); // Update the authentication state
             } catch (error) {
-                console.error("Token decoding error:", error); // Log any decoding errors
-                logoutUser(dispatch);
+                console.error("Token decoding error:", error);
+                logoutUser(dispatch); // Logout if decoding fails
             }
         } else {
-            console.error("No token received. Response data:", data); // Log if no token is received
-            Toast.show({
-                topOffset: 60,
-                type: "error",
-                text1: "Login failed",
-                text2: "No token received from server"
-            });
+            console.error("No token received.");
             logoutUser(dispatch);
         }
     })
     .catch((err) => {
-        Toast.show({
-            topOffset: 60,
-            type: "error",
-            text1: "Please provide correct credentials",
-            text2: err.message || ""
-        });
-        console.error("Login error:", err); // Log the error
+        console.error("Login error:", err);
         logoutUser(dispatch);
     });
 };
@@ -69,8 +50,8 @@ export const getUserProfile = (id) => {
 };
 
 export const logoutUser = (dispatch) => {
-    AsyncStorage.removeItem("jwt");
-    dispatch(setCurrentUser({}));
+    AsyncStorage.removeItem("jwt"); // Remove the token
+    dispatch(setCurrentUser({})); // Clear the authentication state
 };
 
 export const setCurrentUser = (decoded, user) => {
