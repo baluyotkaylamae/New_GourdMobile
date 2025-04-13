@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
         alignItems: 'center',
-        backgroundColor: '#E0F8E6',
+        backgroundColor: '#F5F5F5',
         paddingVertical: 20,
     },
     profileImage: {

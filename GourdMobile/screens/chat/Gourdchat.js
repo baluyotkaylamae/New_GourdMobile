@@ -189,60 +189,125 @@ const ChatScreen = ({ navigation }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#f5f5f5' },
-  header: { fontSize: 26, fontWeight: 'bold', marginBottom: 15, color: '#333' },
+  container: {
+    flex: 1,
+    backgroundColor: '#f9f9f9', // Light background for a clean look
+    paddingHorizontal: 10,
+    paddingTop: 20,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#2c3e50', // Darker text for better contrast
+    textAlign: 'center',
+  },
   searchInput: {
-    height: 40,
-    borderColor: '#ccc',
+    height: 45,
+    borderColor: '#dcdde1',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingLeft: 10,
-    marginBottom: 20,  // Space between search and user list
-    marginHorizontal: 15, // Add horizontal margin (left and right)
+    borderRadius: 25,
+    paddingLeft: 15,
+    marginBottom: 20,
+    backgroundColor: '#ffffff', // White background for input
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3, // Shadow for Android
   },
   userCard: {
     alignItems: 'center',
     marginRight: 15,
-    padding: 12,
-    borderRadius: 50,
-    justifyContent: 'center',
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   avatarContainer: {
-    position: 'relative', // Allows positioning of the online indicator relative to the avatar
+    position: 'relative',
   },
-  userAvatar: { width: 50, height: 50, borderRadius: 25 },
-  userName: { fontSize: 12, fontWeight: '500', color: '#333', textAlign: 'center' },
+  userAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#3498db', // Blue border for a modern touch
+  },
+  userName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#34495e',
+    textAlign: 'center',
+    marginTop: 8,
+  },
   onlineIndicator: {
     position: 'absolute',
-    bottom: 2,
-    right: 2, // Adjust to move it slightly to the right of the avatar
-    width: 12,
-    height: 12,
-    borderRadius: 6, // Half of the width/height to make it a circle
-    backgroundColor: 'green',
-    borderWidth: 2, // Add border width
-    borderColor: '#f5f5f5', // Set the border color to #f5f5f5
+    bottom: 5,
+    right: 5,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#2ecc71', // Green for online status
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
   chatCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderRadius: 15,
     marginBottom: 12,
-    padding: 12,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 3,
     alignItems: 'center',
   },
   unreadChatCard: {
-    backgroundColor: '#e0f7fa',  // Light blue background for unread messages
+    backgroundColor: '#eafaf1', // Light green for unread messages
   },
-  chatAvatar: { width: 60, height: 60, borderRadius: 30, marginRight: 20 },
-  chatContent: { flex: 1, justifyContent: 'center' },
-  chatUser: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  chatMessage: { fontSize: 14, color: '#555', marginTop: 5 },
-  chatTimestamp: { fontSize: 12, color: '#888', marginTop: 5 },
-  errorText: { color: 'red', textAlign: 'center', marginTop: 20 },
+  chatAvatar: {
+    width: 55,
+    height: 55,
+    borderRadius: 27.5,
+    marginRight: 15,
+    borderWidth: 2,
+    borderColor: '#8e44ad', // Purple border for a modern look
+  },
+  chatContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  chatUser: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  chatMessage: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginTop: 5,
+    fontStyle: 'italic', // Italic for message preview
+  },
+  chatTimestamp: {
+    fontSize: 12,
+    color: '#95a5a6',
+    marginTop: 5,
+    textAlign: 'right',
+  },
+  errorText: {
+    color: '#e74c3c', // Red for error messages
+    textAlign: 'center',
+    marginTop: 20,
+    fontWeight: 'bold',
+  },
 });
 
 export default ChatScreen;

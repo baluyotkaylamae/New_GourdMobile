@@ -418,87 +418,239 @@ const UserProfile = ({ navigation }) => {
 
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#E0F8E6', padding: 10 },
-    noPostsText: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', color: 'gray', marginTop: 20, },
-    userInfoContainer: { alignItems: 'center', marginBottom: 20 },
-    profileImage: { width: 80, height: 80, borderRadius: 40, marginBottom: 10 },
-    userName: { fontSize: 18, fontWeight: 'bold' },
-    userEmail: { fontSize: 14, color: 'gray' },
-    forumCard: { marginBottom: 20, padding: 10, borderRadius: 10, backgroundColor: '#f9f9f9' },
-    userContainer: { flexDirection: 'row', alignItems: 'center' },
-    userImage: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-    forumUser: { fontWeight: 'bold' },
-    forumDate: { fontSize: 12, color: 'gray' },
-    forumTitle: { fontSize: 18, fontWeight: 'bold', marginVertical: 5 },
-    forumContent: { fontSize: 16, color: 'gray' },
-    forumImage: { width: '100%', height: 200, marginTop: 10, borderRadius: 10 },
-    likesCommentsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-    likeButton: { flexDirection: 'row', alignItems: 'center' },
-    likeIcon: { marginRight: 5 },
-    likesText: { fontSize: 14, color: '#007AFF' },
-    divider: { width: 1, height: 15, backgroundColor: 'gray' },
-    commentCountText: { fontSize: 14, color: '#007AFF' },
-    commentsContainer: { marginTop: 15 },
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F5F5', // Light background for a clean look
+        padding: 10,
+    },
+    noPostsText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        color: '#7F8C8D', // Neutral gray for no posts text
+        marginTop: 20,
+    },
+    userInfoContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+        padding: 15,
+        backgroundColor: '#FFFFFF', // White card for user info
+        borderRadius: 10,
+        elevation: 3, // Shadow for modern look
+    },
+    profileImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        marginBottom: 10,
+        borderWidth: 2,
+        borderColor: '#3498DB', // Blue border for profile image
+    },
+    userName: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#2C3E50', // Darker text for better contrast
+    },
+    userEmail: {
+        fontSize: 14,
+        color: '#7F8C8D',
+    },
+    viewDetailsButton: {
+        marginTop: 10,
+        backgroundColor: '#3498DB', // Blue button
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+    },
+    viewDetailsText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    forumCard: {
+        marginBottom: 20,
+        padding: 15,
+        borderRadius: 10,
+        backgroundColor: '#FFFFFF', // White card for posts
+        elevation: 3, // Shadow for modern look
+    },
+    userContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    userImage: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: '#BDC3C7', // Light gray border for user image
+    },
+    forumUser: {
+        fontWeight: 'bold',
+        fontSize: 16,
+        color: '#2C3E50',
+    },
+    forumDate: {
+        fontSize: 12,
+        color: '#95A5A6',
+    },
+    forumTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#34495E',
+        marginVertical: 5,
+    },
+    forumContent: {
+        fontSize: 14,
+        color: '#7F8C8D',
+        marginBottom: 10,
+    },
+    forumImage: {
+        width: '100%',
+        height: 200,
+        marginTop: 10,
+        borderRadius: 10,
+    },
+    likesCommentsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 10,
+        alignItems: 'center',
+    },
+    likeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    likeIcon: {
+        marginRight: 5,
+    },
+    likesText: {
+        fontSize: 14,
+        color: '#3498DB',
+    },
+    divider: {
+        width: 1,
+        height: 15,
+        backgroundColor: '#BDC3C7',
+    },
+    commentCountText: {
+        fontSize: 14,
+        color: '#3498DB',
+    },
+    commentsContainer: {
+        marginTop: 15,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#ECF0F1', // Light gray border for separation
+    },
+    commentsHeader: {
+        fontWeight: 'bold',
+        fontSize: 16,
+        color: '#2C3E50',
+        marginBottom: 10,
+    },
+    comment: {
+        marginBottom: 15,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    commentUserImage: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: '#BDC3C7',
+    },
+    commentTextContainer: {
+        flex: 1,
+        backgroundColor: '#F9F9F9', // Light gray background for comments
+        padding: 10,
+        borderRadius: 10,
+    },
+    commentUser: {
+        fontWeight: 'bold',
+        fontSize: 14,
+        color: '#2C3E50',
+    },
+    commentDate: {
+        fontSize: 12,
+        color: '#95A5A6',
+        marginBottom: 5,
+    },
+    commentContent: {
+        fontSize: 14,
+        color: '#7F8C8D',
+    },
+    replyLink: {
+        color: '#3498DB',
+        marginTop: 5,
+        fontSize: 14,
+    },
+    repliesContainer: {
+        marginLeft: 40,
+        marginTop: 10,
+    },
+    reply: {
+        flexDirection: 'row',
+        marginBottom: 10,
+    },
+    replyUserImage: {
+        width: 25,
+        height: 25,
+        borderRadius: 12.5,
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: '#BDC3C7',
+    },
+    replyTextContainer: {
+        flex: 1,
+        backgroundColor: '#F9F9F9',
+        padding: 10,
+        borderRadius: 10,
+    },
+    replyUser: {
+        fontWeight: 'bold',
+        fontSize: 14,
+        color: '#2C3E50',
+    },
+    replyDate: {
+        fontSize: 12,
+        color: '#95A5A6',
+        marginBottom: 5,
+    },
+    replyContent: {
+        fontSize: 14,
+        color: '#7F8C8D',
+    },
     commentInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: 10,
-    },
-    commentsHeader: { fontWeight: 'bold', marginBottom: 10 },
-    comment: { marginBottom: 15 },
-    commentUserImage: { width: 30, height: 30, borderRadius: 15, marginRight: 10 },
-    commentTextContainer: { flex: 1 },
-    commentUser: { fontWeight: 'bold' },
-    commentDate: { fontSize: 12, color: 'gray' },
-    commentContent: { fontSize: 14, color: 'gray' },
-    replyLink: { color: '#007AFF', marginTop: 5 },
-    show: { color: '#007AFF', marginTop: 5 },
-    repliesContainer: { marginLeft: 40 },
-    reply: { flexDirection: 'row', marginBottom: 10 },
-    replyUserImage: { width: 25, height: 25, borderRadius: 12.5, marginRight: 10 },
-    replyTextContainer: { flex: 1 },
-    replyUser: { fontWeight: 'bold' },
-    replyDate: { fontSize: 12, color: 'gray' },
-    replyContent: { fontSize: 14, color: 'gray' },
-    replyButton: { color: '#007AFF', marginTop: 5 },
-    commentButton: { marginTop: 10, color: '#007AFF' },
-    commentInput: { flex: 1, borderWidth: 1, borderColor: '#ccc', borderRadius: 5, padding: 10, marginRight: 10, },
-    addCommentButton: { backgroundColor: '#007AFF', padding: 10, borderRadius: 5 },
-    addCommentButtonText: { color: 'white', textAlign: 'center' },
-    modal: { position: 'absolute', top: '40%', left: '10%', width: '80%', backgroundColor: 'white', padding: 20, borderRadius: 10 },
-    replyInput: { borderColor: '#007AFF', borderWidth: 1, borderRadius: 5, padding: 10, marginBottom: 10 },
-    replyButton: { backgroundColor: '#007AFF', padding: 10, borderRadius: 5 },
-    replyButtonText: { color: 'white', textAlign: 'center' },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContainer: {
-        width: '80%',
-        backgroundColor: '#fff',
+        backgroundColor: '#FFFFFF',
         borderRadius: 10,
-        padding: 20,
-        alignItems: 'center',
+        paddingHorizontal: 10,
+        elevation: 3,
     },
-    modalOption: {
-        width: '100%',
-        padding: 15,
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderColor: '#ccc',
+    commentInput: {
+        flex: 1,
+        borderWidth: 0,
+        padding: 10,
+        fontSize: 14,
+        color: '#2C3E50',
     },
-    modalText: {
-        fontSize: 18,
-        color: '#007AFF',
+    addCommentButton: {
+        backgroundColor: '#3498DB',
+        padding: 10,
+        borderRadius: 10,
+        marginLeft: 10,
     },
-
-    container: { flex: 1, backgroundColor: '#E0F8E6', padding: 10 },
-    ellipsisIconContainer: {
-        position: 'absolute',
-        top: 10,
-        right: 10, // Upper left corner of the post card
+    addCommentButtonText: {
+        color: '#FFFFFF',
+        fontWeight: 'bold',
+        fontSize: 14,
     },
     modalBackground: {
         flex: 1,
@@ -507,24 +659,26 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     actionModal: {
-        backgroundColor: 'white',
+        backgroundColor: '#FFFFFF',
         borderRadius: 10,
         padding: 20,
-        width: '80%', // Adjust modal width
+        width: '80%',
+        elevation: 5,
     },
     actionOption: {
         padding: 15,
         alignItems: 'center',
         borderBottomWidth: 1,
-        borderColor: '#ccc',
+        borderColor: '#ECF0F1',
+    },
+    actionText: {
+        fontSize: 16,
+        color: '#3498DB',
     },
     postStatus: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#FF6347', // You can change this to a color that fits your app's theme
         marginVertical: 5,
     },
-    
 });
-
 export default UserProfile;

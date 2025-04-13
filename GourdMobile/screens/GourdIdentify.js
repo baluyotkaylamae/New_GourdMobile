@@ -8,26 +8,24 @@ import ImageEditor from "@react-native-community/image-editor";
 import jpeg from 'jpeg-js';
 import { ScrollView } from "react-native"; // Import ScrollView
 
-
-const modelAsset = require("../assets/model_unquant_March23.tflite");
+const modelAsset = require("../assets/april12_model_unquant.tflite");
 
 function GourdIdentify() {
     const [image, setImage] = useState(null);
     const [gender, setGender] = useState("");
     const [gourdType, setGourdType] = useState("");
     const [variety, setVariety] = useState("");
+    const [confidence, setConfidence] = useState(""); // State for confidence level
     const [modelLoaded, setModelLoaded] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [probabilityDetails, setProbabilityDetails] = useState(""); // Add state to store probabilities
 
     const labels = [
         { gender: "Male", type: "Sponge Gourd", variety: "Smooth" },
         { gender: "Female", type: "Sponge Gourd", variety: "Smooth" },
         { gender: "Male", type: "Bitter Gourd", variety: "Bilog" },
         { gender: "Female", type: "Bitter Gourd", variety: "Bilog" },
-        { gender: "Female", type: "Bottle Gourd", variety: "Smooth" },
         { gender: "Male", type: "Bottle Gourd", variety: "Smooth" },
-        { gender: "Male", type: "Bitter Gourd", variety: "Haba" },
+        { gender: "Female", type: "Bottle Gourd", variety: "Smooth" },
     ];
 
     const model = useTensorflowModel(modelAsset);
@@ -80,39 +78,37 @@ function GourdIdentify() {
         try {
             const resizedImage = await ImageResizer.createResizedImage(
                 imageUri,
-                224, 
-                224, 
+                224,
+                224,
                 "JPEG",
                 100
             );
-    
+
             const imgBuffer = await FileSystem.readAsStringAsync(resizedImage.uri, {
                 encoding: FileSystem.EncodingType.Base64,
             });
-    
+
             const imageTensor = new Uint8Array(atob(imgBuffer).split("").map(c => c.charCodeAt(0)));
-            const { data, width, height } = jpeg.decode(imageTensor, { useTArray: true });
-    
-            // Normalize the image data to [0, 1]
+            const { width, height, data } = jpeg.decode(imageTensor, { useTArray: true });
+
             const rgbData = [];
             for (let i = 0; i < data.length; i += 4) {
-                rgbData.push(data[i] / 255);      // Red
-                rgbData.push(data[i + 1] / 255);  // Green
-                rgbData.push(data[i + 2] / 255);  // Blue
+                rgbData.push(data[i]);
+                rgbData.push(data[i + 1]);
+                rgbData.push(data[i + 2]);
             }
-    
-            return new Float32Array(rgbData);
+
+            const floatArray = new Float32Array(rgbData.length);
+            for (let i = 0; i < rgbData.length; i++) {
+                // floatArray[i] = rgbData[i] / 255;
+                floatArray[i] = (rgbData[i] / 127.5) - 1
+            }
+
+            return floatArray;
         } catch (error) {
             console.error("Error preprocessing image:", error);
             return null;
         }
-    };
-    
-
-    const softmax = (logits) => {
-        const exps = logits.map(Math.exp);
-        const sumExps = exps.reduce((a, b) => a + b, 0);
-        return exps.map(e => e / sumExps);
     };
 
     const handleIdentify = async () => {
@@ -124,45 +120,40 @@ function GourdIdentify() {
             Alert.alert("Error", "Please select an image to identify.");
             return;
         }
-    
+
         setLoading(true);
         try {
             const tensorInput = await preprocessImage(image);
+
             if (!tensorInput) {
                 Alert.alert("Error", "Failed to process image.");
                 return;
             }
-    
+
             const reshapedTensor = new Float32Array(1 * 224 * 224 * 3);
             reshapedTensor.set(tensorInput, 0);
-    
+
             const result = actualModel.runSync([reshapedTensor]);
+
             if (result && result.length > 0) {
-                console.log("Raw Model Output:", result[0]); // Debugging raw output
-    
-                const probabilities = softmax(result[0]);
-                console.log("Probabilities:", probabilities);
-    
-                // Format probabilities for display
-                const formattedProbabilities = labels.map((label, index) => {
-                    return `${label.type} (${label.gender}, ${label.variety}): ${(probabilities[index] * 100).toFixed(2)}%`;
-                }).join("\n");
-    
-                setProbabilityDetails(formattedProbabilities); // Update state with probabilities
-    
-                const maxProbability = Math.max(...probabilities);
-                const maxIndex = probabilities.findIndex(p => p === maxProbability);
-    
-                console.log("Max Probability:", maxProbability, "Index:", maxIndex);
-    
-                if (maxProbability < 0.15) { // Adjusted confidence threshold
+                const maxProbability = Math.max(...result[0]);
+                const maxIndex = result[0].findIndex(p => p === maxProbability);
+
+                if (maxProbability < 0.1) {
                     Alert.alert("Low Confidence", "The model is not confident about its prediction.");
                     return;
                 }
-    
+
                 setGender(labels[maxIndex].gender);
                 setGourdType(labels[maxIndex].type);
                 setVariety(labels[maxIndex].variety);
+
+                // Format probabilities for display
+                const formattedProbabilities = labels.map((label, index) => {
+                    return `${label.type} (${label.gender}, ${label.variety}): ${(result[0][index] * 100).toFixed(2)}%`;
+                }).join("\n");
+
+                setConfidence(formattedProbabilities); // Set confidence as formatted probabilities
             } else {
                 Alert.alert("Inference Error", "Could not classify image.");
             }
@@ -173,23 +164,22 @@ function GourdIdentify() {
             setLoading(false);
         }
     };
-    
+
     const handleReset = () => {
         setImage(null);
         setGender("");
         setGourdType("");
         setVariety("");
-        setProbabilityDetails(""); 
+        setConfidence("");
+        setLoading(false);
     };
-
-    
 
     return (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
             <View style={styles.container}>
                 {model.state === 'loading' && <ActivityIndicator size="large" color="blue" />}
                 {model.state === 'error' && <Text>Failed to load model! {model.error.message}</Text>}
-    
+
                 <View style={styles.imageContainer}>
                     <TouchableOpacity style={styles.imageWrapper} onPress={handleImagePick}>
                         {image ? (
@@ -223,14 +213,18 @@ function GourdIdentify() {
                         <Text style={styles.resultLabel}>Variety:</Text>
                         <TextInput style={styles.resultBox} editable={false} value={variety} />
                     </View>
-                    {probabilityDetails ? (
-                        <Text style={styles.probabilityText}>{probabilityDetails}</Text>
-                    ) : null}
                 </View>
+                {confidence ? (
+                    <View style={styles.confidenceContainer}>
+                        <Text style={styles.confidenceHeader}>Confidence Levels:</Text>
+                        <Text style={styles.confidenceText}>{confidence}</Text>
+                    </View>
+                ) : null}
             </View>
         </ScrollView>
     );
 }
+
 const styles = StyleSheet.create({
     scrollContainer: {
         flexGrow: 1,
@@ -328,24 +322,41 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "bold",
         color: "#333333",
-        marginRight: 10,
+        width: 80, // Fixed width for labels
     },
     resultBox: {
         flex: 1,
+        height: 40, // Ensure equal height for all result boxes
         backgroundColor: "#F9F9F9", // Light gray for result box
         borderColor: "#DDDDDD",
         borderWidth: 1,
         borderRadius: 10,
-        padding: 10,
+        paddingHorizontal: 10,
         fontSize: 16,
         color: "#333333",
+        textAlignVertical: "center", // Center text vertically
     },
-    probabilityText: {
+    confidenceContainer: {
         marginTop: 20,
-        fontSize: 14,
+        padding: 15,
+        backgroundColor: "#FFFFFF",
+        borderRadius: 10,
+        elevation: 3,
+        width: "100%",
+    },
+    confidenceHeader: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#333",
+        marginBottom: 10,
+    },
+    confidenceText: {
+        marginTop: 10,
+        fontSize: 15,
         color: "#555",
-        textAlign: "center",
-        fontStyle: "italic",
+        textAlign: "Justify",
+        fontStyle: "Normal",
     },
 });
+
 export default GourdIdentify;
