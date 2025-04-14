@@ -40,7 +40,7 @@ function GourdIdentify() {
             modelLoadRef.current = true;
         }
     }, [actualModel]);
-
+  
     const handleImagePick = async () => {
         const options = [
             { text: "Cancel", style: "cancel" },
@@ -51,9 +51,46 @@ function GourdIdentify() {
                         mediaTypes: ImagePicker.MediaTypeOptions.Images,
                         quality: 1,
                     });
-                    if (!result.canceled) {
-                        console.log("Image picked from camera:", result.assets[0].uri);
-                        setImage(result.assets[0].uri);
+                    if (!result.canceled && result.assets && result.assets.length > 0) {
+                        const imageUri = result.assets[0].uri;
+    
+                        // Show loading indicator
+                        setLoading(true);
+    
+                        // Perform checks in a background thread
+                        setTimeout(async () => {
+                            const isBlurry = await checkBlurriness(imageUri);
+                            const isPoorLighting = await checkLighting(imageUri);
+    
+                            setLoading(false); // Hide loading indicator
+    
+                            if (isBlurry) {
+                                Alert.alert(
+                                    "Blurry Image",
+                                    "The image appears blurry. Please clean the lens and retake the photo."
+                                );
+                                return;
+                            }
+    
+                            if (isPoorLighting === "dark") {
+                                Alert.alert(
+                                    "Low Lighting",
+                                    "The lighting is too dark. Please adjust the lighting and retake the photo."
+                                );
+                                return;
+                            }
+    
+                            if (isPoorLighting === "bright") {
+                                Alert.alert(
+                                    "High Lighting",
+                                    "The lighting is too bright. Please adjust the lighting and retake the photo."
+                                );
+                                return;
+                            }
+    
+                            console.log("Image picked from camera:", imageUri);
+                            setImage(imageUri);
+                        }, 0);
                     }
                 },
             },
@@ -64,14 +101,117 @@ function GourdIdentify() {
                         mediaTypes: ImagePicker.MediaTypeOptions.Images,
                         quality: 1,
                     });
-                    if (!result.canceled) {
-                        console.log("Image picked from gallery:", result.assets[0].uri);
-                        setImage(result.assets[0].uri);
+                    if (!result.canceled && result.assets && result.assets.length > 0) {
+                        const imageUri = result.assets[0].uri;
+    
+                        // Show loading indicator
+                        setLoading(true);
+    
+                        // Perform checks in a background thread
+                        setTimeout(async () => {
+                            const isBlurry = await checkBlurriness(imageUri);
+                            const isPoorLighting = await checkLighting(imageUri);
+    
+                            setLoading(false); // Hide loading indicator
+    
+                            if (isBlurry) {
+                                Alert.alert(
+                                    "Blurry Image",
+                                    "The image appears blurry. Please clean the lens and retake the photo."
+                                );
+                                return;
+                            }
+    
+                            if (isPoorLighting === "dark") {
+                                Alert.alert(
+                                    "Low Lighting",
+                                    "The lighting is too dark. Please adjust the lighting and retake the photo."
+                                );
+                                return;
+                            }
+    
+                            if (isPoorLighting === "bright") {
+                                Alert.alert(
+                                    "High Lighting",
+                                    "The lighting is too bright. Please adjust the lighting and retake the photo."
+                                );
+                                return;
+                            }
+    
+                            console.log("Image picked from gallery:", imageUri);
+                            setImage(imageUri);
+                        }, 0);
                     }
                 },
             },
         ];
         Alert.alert("Select Image", "Choose an option", options);
+    };
+    
+    // Helper function to check for blurriness
+    const checkBlurriness = async (imageUri) => {
+        try {
+            const resizedImage = await ImageResizer.createResizedImage(
+                imageUri,
+                100, // Resize to smaller dimensions for faster processing
+                100,
+                "JPEG",
+                80
+            );
+    
+            const imgBuffer = await FileSystem.readAsStringAsync(resizedImage.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+    
+            const imageTensor = Uint8Array.from(atob(imgBuffer), c => c.charCodeAt(0));
+            const { data } = jpeg.decode(imageTensor, { useTArray: true });
+    
+            let variance = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                variance += Math.pow(data[i] - 128, 2); // Calculate variance of pixel intensity
+            }
+            variance /= data.length / 4;
+    
+            console.log("Blurriness variance:", variance);
+            return variance < 100; // Threshold for blurriness
+        } catch (error) {
+            console.error("Error checking blurriness:", error);
+            return false;
+        }
+    };
+    
+    // Helper function to check for poor lighting
+    const checkLighting = async (imageUri) => {
+        try {
+            const resizedImage = await ImageResizer.createResizedImage(
+                imageUri,
+                100, // Resize to smaller dimensions for faster processing
+                100,
+                "JPEG",
+                80
+            );
+    
+            const imgBuffer = await FileSystem.readAsStringAsync(resizedImage.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+    
+            const imageTensor = Uint8Array.from(atob(imgBuffer), c => c.charCodeAt(0));
+            const { data } = jpeg.decode(imageTensor, { useTArray: true });
+    
+            let brightness = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                brightness += (data[i] + data[i + 1] + data[i + 2]) / 3; // Average RGB values
+            }
+            brightness /= data.length / 4;
+    
+            console.log("Brightness level:", brightness);
+            if (brightness < 50) return "dark"; // Threshold for low lighting
+            if (brightness > 200) return "bright"; // Threshold for high lighting
+            return "normal";
+        } catch (error) {
+            console.error("Error checking lighting:", error);
+            return "normal";
+        }
     };
 
     const preprocessImage = async (imageUri) => {
@@ -100,8 +240,9 @@ function GourdIdentify() {
 
             const floatArray = new Float32Array(rgbData.length);
             for (let i = 0; i < rgbData.length; i++) {
-                // floatArray[i] = rgbData[i] / 255;
-                floatArray[i] = (rgbData[i] / 127.5) - 1
+                floatArray[i] = rgbData[i] / 255;
+                // floatArray[i] = (rgbData[i] / 127.5) - 1
+                // floatArray[i] = rgbData[i];
             }
 
             return floatArray;
