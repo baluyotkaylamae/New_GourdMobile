@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Dimensions, StyleSheet, ScrollView, Text } from 'react-native';
 import { Card } from 'react-native-paper';
-import { LineChart } from 'react-native-gifted-charts';
+import { LineChart } from 'react-native-gifted-charts'; // Using LineChart for lollipop chart
 import axios from 'axios';
 import baseURL from '../../assets/common/baseurl';
 import AuthGlobal from '../../Context/Store/AuthGlobal';
@@ -44,8 +44,9 @@ const FailedPollination = () => {
         response.data.forEach((record) => {
           if (record.status !== 'Failed') return;
 
-          const date = new Date(record.dateOfPollination);
-          const monthYear = `${date.getMonth() + 1}-${date.getFullYear()}`;
+          const date = new Date(record.dateOfFinalization);
+          const weekStart = new Date(date.setDate(date.getDate() - date.getDay())); // Start of the week (Sunday)
+          const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}/${weekStart.getFullYear()}`;
           const plotNo = record.plotNo || 'Unknown Plot';
           const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
           const variety = record.variety?.name || 'Unknown Variety';
@@ -62,10 +63,10 @@ const FailedPollination = () => {
             failedDataMap[plotNo][gourdType][variety] = {};
           }
 
-          if (failedDataMap[plotNo][gourdType][variety][monthYear]) {
-            failedDataMap[plotNo][gourdType][variety][monthYear] += record.pollinatedFlowers || 0;
+          if (failedDataMap[plotNo][gourdType][variety][weekLabel]) {
+            failedDataMap[plotNo][gourdType][variety][weekLabel] += record.pollinatedFlowers || 0;
           } else {
-            failedDataMap[plotNo][gourdType][variety][monthYear] = record.pollinatedFlowers || 0;
+            failedDataMap[plotNo][gourdType][variety][weekLabel] = record.pollinatedFlowers || 0;
           }
         });
 
@@ -75,19 +76,12 @@ const FailedPollination = () => {
               const plotData = Object.keys(failedDataMap[plotNo][gourdType][variety]).map((key) => ({
                 value: failedDataMap[plotNo][gourdType][variety][key],
                 dataPointText: failedDataMap[plotNo][gourdType][variety][key].toString(),
-                label: key
+                label: key,
               }));
 
-              plotData.sort((a, b) => {
-                const [monthA, yearA] = a.label.split('-');
-                const [monthB, yearB] = b.label.split('-');
+              plotData.sort((a, b) => new Date(a.label) - new Date(b.label));
 
-                return yearA === yearB
-                  ? monthA - monthB
-                  : yearA - yearB;
-              });
-
-              return { variety, data: [{ value: 0, label: '' }, ...plotData] };
+              return { variety, data: plotData };
             });
 
             return { gourdType, varietiesData };
@@ -111,7 +105,7 @@ const FailedPollination = () => {
       {failedStats.map((plotData, index) => (
         <Card key={index} style={styles.card}>
           <Card.Content>
-            <Text style={styles.header}>Monthly Failed Pollinations - Plot No.{plotData.plotNo}</Text>
+            <Text style={styles.header}>Weekly Failed Pollinations - Plot No.{plotData.plotNo}</Text>
             {plotData.gourdTypesData && plotData.gourdTypesData.map((gourdData, gourdIndex) => (
               <View key={gourdIndex}>
                 <Text style={styles.subHeader}>Gourd Type: {gourdData.gourdType}</Text>
@@ -121,28 +115,22 @@ const FailedPollination = () => {
                     <ScrollView horizontal>
                       <View>
                         <LineChart
-                          initialSpacing={0}
                           data={varietyData.data}
                           spacing={50}
-                          textColor1="yellow"
-                          textShiftY={-8}
-                          textShiftX={-10}
-                          textFontSize={13}
-                          thickness={5}
+                          thickness={2}
+                          color="#0BA5A4"
                           hideRules
                           yAxisColor="#0BA5A4"
-                          showVerticalLines
-                          verticalLinesColor="rgba(14,164,164,0.5)"
                           xAxisColor="#0BA5A4"
-                          color="#0BA5A4"
                           xAxisLabelTextStyle={{ color: 'gray', fontSize: 8 }}
                           yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
-                          yAxisLabelPrefix=""
-                          yAxisLabelSuffix=""
                           noOfSections={4}
                           startAtZero
                           adjustForEmptyLabel={true}
                           width={screenWidth + varietyData.data.length * 30} // Adjusted width for scrolling
+                          dataPointsRadius={6} // Lollipop circle size
+                          dataPointsColor="#0BA5A4" // Lollipop circle color
+                          dataPointsWidth={2} // Line thickness for lollipop
                         />
                       </View>
                     </ScrollView>

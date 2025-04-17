@@ -135,15 +135,20 @@ const MonitoringScreen = () => {
   }, [monitoringData]);
 
   const handleDateChange = (event, selectedDate) => {
-    setDatePickerVisible(null);
+    setDatePickerVisible(null); // Close the date picker
     if (selectedDate) {
       if (datePickerVisible === "pollination") {
         const finalizationDate = new Date(selectedDate);
-        finalizationDate.setDate(selectedDate.getDate() + 21);
+        finalizationDate.setDate(selectedDate.getDate() + 7); // Default finalization date is 7 days after pollination
         setMonitoringData((prevState) => ({
           ...prevState,
           dateOfPollination: selectedDate,
           dateOfFinalization: finalizationDate,
+        }));
+      } else if (datePickerVisible === "finalization") {
+        setMonitoringData((prevState) => ({
+          ...prevState,
+          dateOfFinalization: selectedDate, // Allow editing the finalization date
         }));
       }
     }
@@ -245,12 +250,75 @@ const MonitoringScreen = () => {
   };
 
   // Function to update monitoring with images
+  // const updateMonitoring = async (id) => {
+  //   console.log("Monitoring ID:", id);
+  //   if (!id) {
+  //     console.error("ID is required for updating the monitoring record.");
+  //     return;
+  //   }
+  //   const storedToken = await AsyncStorage.getItem("jwt");
+  //   const formData = new FormData();
+
+  //   // Determine status based on fruitsHarvested
+  //   const status = monitoringData.fruitsHarvested > 0 ? "Completed" : "Failed";
+
+  //   formData.append("fruitsHarvested", monitoringData.fruitsHarvested);
+  //   formData.append("dateOfFinalization", monitoringData.dateOfFinalization ? new Date(monitoringData.dateOfFinalization).toISOString() : new Date().toISOString());
+  //   formData.append("status", status); // Updated status logic
+
+
+  //   // Append new pollinated flower images
+  //   // Append fruit harvested images
+  //   (monitoringData.fruitHarvestedImages || []).forEach((imageUri, index) => {
+  //     if (imageUri) {
+  //       const newImageUri = `file:///${imageUri.split("file:/").join("")}`;
+  //       formData.append("fruitHarvestedImages", {
+  //         uri: newImageUri,
+  //         type: mime.getType(newImageUri) || 'image/jpeg',
+  //         name: `fruit_harvested_${index}.jpg`,
+  //       });
+  //     }
+  //   });
+  //   try {
+  //     const response = await axios.put(`${baseURL}Monitoring/${id}`, formData, {
+  //       headers: {
+  //         Authorization: `Bearer ${storedToken}`,
+  //         "Content-Type": "multipart/form-data",
+  //       },
+  //     });
+
+  //     const updatedMonitorings = monitorings.map((item) =>
+  //       item._id === id ? { ...response.data } : item
+  //     );
+
+  //     setMonitorings(updatedMonitorings);
+  //   } catch (err) {
+  //     setError("Error updating monitoring");
+  //   }
+  // };
+
+
   const updateMonitoring = async (id) => {
     console.log("Monitoring ID:", id);
     if (!id) {
       console.error("ID is required for updating the monitoring record.");
       return;
     }
+
+    // Check if 7 days have passed since the date of pollination
+    const today = new Date();
+    const pollinationDate = new Date(monitoringData.dateOfPollination);
+    const daysSincePollination = Math.floor((today - pollinationDate) / (1000 * 60 * 60 * 24));
+
+    if (daysSincePollination < 7) {
+      Alert.alert(
+        "Update Not Allowed",
+        `You can only update this record after 7 days from the date of pollination. ${7 - daysSincePollination} day(s) remaining.`,
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     const storedToken = await AsyncStorage.getItem("jwt");
     const formData = new FormData();
 
@@ -258,22 +326,26 @@ const MonitoringScreen = () => {
     const status = monitoringData.fruitsHarvested > 0 ? "Completed" : "Failed";
 
     formData.append("fruitsHarvested", monitoringData.fruitsHarvested);
-    formData.append("dateOfFinalization", monitoringData.dateOfFinalization ? new Date(monitoringData.dateOfFinalization).toISOString() : new Date().toISOString());
+    formData.append(
+      "dateOfFinalization",
+      monitoringData.dateOfFinalization
+        ? new Date(monitoringData.dateOfFinalization).toISOString()
+        : new Date().toISOString()
+    );
     formData.append("status", status); // Updated status logic
 
-
-    // Append new pollinated flower images
     // Append fruit harvested images
     (monitoringData.fruitHarvestedImages || []).forEach((imageUri, index) => {
       if (imageUri) {
         const newImageUri = `file:///${imageUri.split("file:/").join("")}`;
         formData.append("fruitHarvestedImages", {
           uri: newImageUri,
-          type: mime.getType(newImageUri) || 'image/jpeg',
+          type: mime.getType(newImageUri) || "image/jpeg",
           name: `fruit_harvested_${index}.jpg`,
         });
       }
     });
+
     try {
       const response = await axios.put(`${baseURL}Monitoring/${id}`, formData, {
         headers: {
@@ -308,7 +380,7 @@ const MonitoringScreen = () => {
   const resetMonitoringData = () => {
     const today = new Date();
     const finalizationDate = new Date(today);
-    finalizationDate.setDate(today.getDate() + 21);
+    finalizationDate.setDate(today.getDate() + 7);
 
     setMonitoringData({
       gourdType: "",
@@ -618,12 +690,14 @@ const MonitoringScreen = () => {
                 <Text style={styles.uploadText}>+ Add Image</Text>
               </TouchableOpacity>
             </View>
+
             <TouchableOpacity
               style={styles.input}
-              onPress={() => setDatePickerVisible("Finalization")}
+              onPress={() => setDatePickerVisible("finalization")}
             >
-              <Text style={styles.input}>{new Date(monitoringData.dateOfFinalization).toDateString()}</Text>
+              <Text>{new Date(monitoringData.dateOfFinalization).toDateString()}</Text>
             </TouchableOpacity>
+
             <View style={styles.buttonRow}>
               <EasyButton medium primary onPress={() => {
                 if (parseInt(monitoringData.fruitsHarvested) > monitoringData.pollinatedFlowers) {
@@ -641,6 +715,17 @@ const MonitoringScreen = () => {
             </View>
           </View>
         </View>
+
+        {datePickerVisible && (
+          <DateTimePicker
+            value={datePickerVisible === "pollination" ? monitoringData.dateOfPollination : monitoringData.dateOfFinalization}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        )}
+
+
       </Modal>
     </View>
   );

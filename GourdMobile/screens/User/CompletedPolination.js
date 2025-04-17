@@ -10,19 +10,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const screenWidth = Dimensions.get('window').width;
 
 const Dashboard = () => {
-  const [monthlyStats, setMonthlyStats] = useState([]);
+  const [weeklyStats, setWeeklyStats] = useState([]);
   const [successRate, setSuccessRate] = useState(null);
   const [error, setError] = useState(null);
   const context = useContext(AuthGlobal);
 
   useEffect(() => {
     if (context.stateUser.isAuthenticated === true) {
-      fetchMonthlyStats();
+      fetchWeeklyStats();
       fetchSuccessRate();
     }
   }, [context.stateUser.isAuthenticated]);
 
-  const fetchMonthlyStats = async () => {
+  const fetchWeeklyStats = async () => {
     try {
       const storedToken = await AsyncStorage.getItem('jwt');
       if (!storedToken) {
@@ -41,53 +41,47 @@ const Dashboard = () => {
       });
 
       if (Array.isArray(response.data)) {
-        const monthlyDataMap = {};
+        const weeklyDataMap = {};
 
         response.data.forEach((record) => {
           if (record.status !== 'Completed') return;
 
-          const date = new Date(record.dateOfPollination);
-          const monthYear = `${date.getMonth() + 1}-${date.getFullYear()}`;
+          const date = new Date(record.dateOfFinalization); // Use dateOfFinalization instead of dateOfPollination
+          const weekStart = new Date(date.setDate(date.getDate() - date.getDay())); // Start of the week (Sunday)
+          const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}/${weekStart.getFullYear()}`;
           const plotNo = record.plotNo || 'Unknown Plot';
           const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
           const variety = record.variety?.name || 'Unknown Variety';
 
-          if (!monthlyDataMap[plotNo]) {
-            monthlyDataMap[plotNo] = {};
+          if (!weeklyDataMap[plotNo]) {
+            weeklyDataMap[plotNo] = {};
           }
 
-          if (!monthlyDataMap[plotNo][gourdType]) {
-            monthlyDataMap[plotNo][gourdType] = {};
+          if (!weeklyDataMap[plotNo][gourdType]) {
+            weeklyDataMap[plotNo][gourdType] = {};
           }
 
-          if (!monthlyDataMap[plotNo][gourdType][variety]) {
-            monthlyDataMap[plotNo][gourdType][variety] = {};
+          if (!weeklyDataMap[plotNo][gourdType][variety]) {
+            weeklyDataMap[plotNo][gourdType][variety] = {};
           }
 
-          if (monthlyDataMap[plotNo][gourdType][variety][monthYear]) {
-            monthlyDataMap[plotNo][gourdType][variety][monthYear] += record.pollinatedFlowers || 0;
+          if (weeklyDataMap[plotNo][gourdType][variety][weekLabel]) {
+            weeklyDataMap[plotNo][gourdType][variety][weekLabel] += record.pollinatedFlowers || 0;
           } else {
-            monthlyDataMap[plotNo][gourdType][variety][monthYear] = record.pollinatedFlowers || 0;
+            weeklyDataMap[plotNo][gourdType][variety][weekLabel] = record.pollinatedFlowers || 0;
           }
         });
 
-        const formattedData = Object.keys(monthlyDataMap).map((plotNo) => {
-          const gourdTypesData = Object.keys(monthlyDataMap[plotNo]).map((gourdType) => {
-            const varietiesData = Object.keys(monthlyDataMap[plotNo][gourdType]).map((variety) => {
-              const plotData = Object.keys(monthlyDataMap[plotNo][gourdType][variety]).map((key) => ({
-                value: monthlyDataMap[plotNo][gourdType][variety][key],
-                dataPointText: monthlyDataMap[plotNo][gourdType][variety][key].toString(),
+        const formattedData = Object.keys(weeklyDataMap).map((plotNo) => {
+          const gourdTypesData = Object.keys(weeklyDataMap[plotNo]).map((gourdType) => {
+            const varietiesData = Object.keys(weeklyDataMap[plotNo][gourdType]).map((variety) => {
+              const plotData = Object.keys(weeklyDataMap[plotNo][gourdType][variety]).map((key) => ({
+                value: weeklyDataMap[plotNo][gourdType][variety][key],
+                dataPointText: weeklyDataMap[plotNo][gourdType][variety][key].toString(),
                 label: key
               }));
 
-              plotData.sort((a, b) => {
-                const [monthA, yearA] = a.label.split('-');
-                const [monthB, yearB] = b.label.split('-');
-
-                return yearA === yearB
-                  ? monthA - monthB
-                  : yearA - yearB;
-              });
+              plotData.sort((a, b) => new Date(a.label) - new Date(b.label));
 
               return { variety, data: [{ value: 0, label: '' }, ...plotData] };
             });
@@ -98,7 +92,7 @@ const Dashboard = () => {
           return { plotNo, gourdTypesData };
         });
 
-        setMonthlyStats(formattedData);
+        setWeeklyStats(formattedData);
         setError(null);
       } else {
         setError('Data is not in expected array format');
@@ -144,10 +138,10 @@ const Dashboard = () => {
 
   return (
     <ScrollView>
-      {monthlyStats.map((plotData, index) => (
+      {weeklyStats.map((plotData, index) => (
         <Card key={index} style={styles.card}>
           <Card.Content>
-            <Text style={styles.header}>Monthly Pollinated Flowers - Plot No.{plotData.plotNo}</Text>
+            <Text style={styles.header}>Weekly Pollinated Flowers - Plot No.{plotData.plotNo}</Text>
             {plotData.gourdTypesData && plotData.gourdTypesData.map((gourdData, gourdIndex) => (
               <View key={gourdIndex}>
                 <Text style={styles.subHeader}>Gourd Type: {gourdData.gourdType}</Text>

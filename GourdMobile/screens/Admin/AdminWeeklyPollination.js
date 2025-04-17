@@ -1,24 +1,20 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Dimensions, StyleSheet, ScrollView, Text } from 'react-native';
 import { Card } from 'react-native-paper';
-import { BarChart } from 'react-native-gifted-charts';
+import { BarChart } from 'react-native-gifted-charts'; // Changed to BarChart
 import axios from 'axios';
 import baseURL from '../../assets/common/baseurl';
-import AuthGlobal from '../../Context/Store/AuthGlobal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const screenWidth = Dimensions.get('window').width;
 
-const WeeklyPollination = () => {
+const WeeklyPollinationAdmin = () => {
   const [weeklyStats, setWeeklyStats] = useState([]);
   const [error, setError] = useState(null);
-  const context = useContext(AuthGlobal);
 
   useEffect(() => {
-    if (context.stateUser.isAuthenticated === true) {
-      fetchWeeklyStats();
-    }
-  }, [context.stateUser.isAuthenticated]);
+    fetchWeeklyStats();
+  }, []);
 
   const fetchWeeklyStats = async () => {
     try {
@@ -28,13 +24,7 @@ const WeeklyPollination = () => {
         return;
       }
 
-      const userId = context.stateUser?.user?.userId;
-      if (!userId) {
-        setError('User ID is missing');
-        return;
-      }
-
-      const response = await axios.get(`${baseURL}Monitoring/${userId}`, {
+      const response = await axios.get(`${baseURL}Monitoring`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
 
@@ -186,4 +176,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WeeklyPollination;
+export default WeeklyPollinationAdmin;

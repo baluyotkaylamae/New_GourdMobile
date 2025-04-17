@@ -1,24 +1,28 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Dimensions, StyleSheet, ScrollView, Text } from 'react-native';
 import { Card } from 'react-native-paper';
-import { BarChart } from 'react-native-gifted-charts';
+import { LineChart } from 'react-native-gifted-charts';
 import axios from 'axios';
 import baseURL from '../../assets/common/baseurl';
-import AuthGlobal from '../../Context/Store/AuthGlobal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const screenWidth = Dimensions.get('window').width;
 
-const WeeklyPollination = () => {
+const AdminCompletedPollination = () => {
   const [weeklyStats, setWeeklyStats] = useState([]);
+  const [successRate, setSuccessRate] = useState(null);
   const [error, setError] = useState(null);
-  const context = useContext(AuthGlobal);
 
   useEffect(() => {
-    if (context.stateUser.isAuthenticated === true) {
-      fetchWeeklyStats();
-    }
-  }, [context.stateUser.isAuthenticated]);
+    fetchWeeklyStats();
+    fetchSuccessRate();
+  }, []);
+
+  const getWeekNumber = (date) => {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  };
 
   const fetchWeeklyStats = async () => {
     try {
@@ -28,13 +32,7 @@ const WeeklyPollination = () => {
         return;
       }
 
-      const userId = context.stateUser?.user?.userId;
-      if (!userId) {
-        setError('User ID is missing');
-        return;
-      }
-
-      const response = await axios.get(`${baseURL}Monitoring/${userId}`, {
+      const response = await axios.get(`${baseURL}Monitoring`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
 
@@ -42,10 +40,10 @@ const WeeklyPollination = () => {
         const weeklyDataMap = {};
 
         response.data.forEach((record) => {
-          const date = new Date(record.dateOfPollination);
-          const weekNumber = getWeekNumber(date);
-          const year = date.getFullYear();
-          const weekYear = `Week ${weekNumber} ${year}`;
+          if (record.status !== 'Completed') return;
+
+          const date = new Date(record.dateOfFinalization);
+          const weekYear = `${getWeekNumber(date)}-${date.getFullYear()}`;
           const plotNo = record.plotNo || 'Unknown Plot';
           const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
           const variety = record.variety?.name || 'Unknown Variety';
@@ -72,22 +70,22 @@ const WeeklyPollination = () => {
         const formattedData = Object.keys(weeklyDataMap).map((plotNo) => {
           const gourdTypesData = Object.keys(weeklyDataMap[plotNo]).map((gourdType) => {
             const varietiesData = Object.keys(weeklyDataMap[plotNo][gourdType]).map((variety) => {
-              const plotData = Object.keys(weeklyDataMap[plotNo][gourdType][variety]).map((key, index) => ({
+              const plotData = Object.keys(weeklyDataMap[plotNo][gourdType][variety]).map((key) => ({
                 value: weeklyDataMap[plotNo][gourdType][variety][key],
-                label: key,
-                frontColor: getRandomColor(index), // Assign a random color to each bar
+                dataPointText: weeklyDataMap[plotNo][gourdType][variety][key].toString(),
+                label: key
               }));
 
               plotData.sort((a, b) => {
-                const [weekA, yearA] = a.label.split(' ').slice(1);
-                const [weekB, yearB] = b.label.split(' ').slice(1);
+                const [weekA, yearA] = a.label.split('-');
+                const [weekB, yearB] = b.label.split('-');
 
                 return yearA === yearB
                   ? weekA - weekB
                   : yearA - yearB;
               });
 
-              return { variety, data: plotData };
+              return { variety, data: [{ value: 0, label: '' }, ...plotData] };
             });
 
             return { gourdType, varietiesData };
@@ -106,15 +104,32 @@ const WeeklyPollination = () => {
     }
   };
 
-  const getWeekNumber = (date) => {
-    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
-    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-  };
+  const fetchSuccessRate = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem('jwt');
+      if (!storedToken) {
+        setError('No authentication token found');
+        return;
+      }
 
-  const getRandomColor = (index) => {
-    const colors = ['#FF5733', '#33FF57', '#3357FF', '#FF33A1', '#A133FF', '#33FFF5'];
-    return colors[index % colors.length];
+      const response = await axios.get(`${baseURL}Monitoring`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
+
+      if (Array.isArray(response.data)) {
+        const completedRecords = response.data.filter(record => record.status === 'Completed');
+        const totalPollinatedFlowers = completedRecords.reduce((sum, record) => sum + (record.pollinatedFlowers || 0), 0);
+        const totalFruitsHarvested = completedRecords.reduce((sum, record) => sum + (record.fruitsHarvested || 0), 0);
+
+        const rate = totalPollinatedFlowers > 0 ? (totalFruitsHarvested / totalPollinatedFlowers) * 100 : 0;
+        setSuccessRate(rate.toFixed(2));
+        setError(null);
+      } else {
+        setError('Data is not in expected array format');
+      }
+    } catch (error) {
+      setError('Failed to fetch success rate');
+    }
   };
 
   return (
@@ -131,16 +146,29 @@ const WeeklyPollination = () => {
                     <Text style={styles.subHeader}>Variety: {varietyData.variety}</Text>
                     <ScrollView horizontal>
                       <View>
-                        <BarChart
+                        <LineChart
+                          initialSpacing={0}
                           data={varietyData.data}
-                          barWidth={30}
-                          barBorderRadius={4}
+                          spacing={50}
+                          textColor1="yellow"
+                          textShiftY={-8}
+                          textShiftX={-10}
+                          textFontSize={13}
+                          thickness={5}
+                          hideRules
                           yAxisColor="#0BA5A4"
+                          showVerticalLines
+                          verticalLinesColor="rgba(14,164,164,0.5)"
                           xAxisColor="#0BA5A4"
+                          color="#0BA5A4"
                           xAxisLabelTextStyle={{ color: 'gray', fontSize: 8 }}
                           yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
+                          yAxisLabelPrefix=""
+                          yAxisLabelSuffix=""
                           noOfSections={4}
-                          width={screenWidth + varietyData.data.length * 40} // Adjusted width for scrolling
+                          startAtZero
+                          adjustForEmptyLabel={true}
+                          width={screenWidth + varietyData.data.length * 30} // Adjusted width for scrolling
                         />
                       </View>
                     </ScrollView>
@@ -152,6 +180,13 @@ const WeeklyPollination = () => {
           </Card.Content>
         </Card>
       ))}
+      <Card style={styles.card}>
+        <Card.Content>
+          <Text style={styles.header}>Success Rate of Manual Pollination</Text>
+          <Text style={styles.successRate}>{successRate !== null ? `${successRate}%` : 'Loading...'}</Text>
+          {error && <Text style={styles.error}>{error}</Text>}
+        </Card.Content>
+      </Card>
     </ScrollView>
   );
 };
@@ -179,6 +214,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
+  successRate: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: 'green',
+  },
   error: {
     color: 'red',
     textAlign: 'center',
@@ -186,4 +227,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WeeklyPollination;
+export default AdminCompletedPollination;

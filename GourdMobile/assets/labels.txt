@@ -1,0 +1,6 @@
+0 Sponge, Male
+1 Sponge, Female
+2 Bitter, Male
+3 Bitter, Female
+4 Bottle, Male
+5 Bottle, Female

@@ -55,10 +55,10 @@ const DrawerNavigator = () => {
         }}
       />
       <Drawer.Screen
-        name="Dashboard"
+        name="MyDashboard"
         component={Dashboard}
         options={{
-          headerTitle: 'Dashboard',
+          headerTitle: 'MyDashboard',
           drawerIcon: ({ color, size }) => (
             <Ionicons name="bar-chart-outline" size={size} color={color} />
           ),
