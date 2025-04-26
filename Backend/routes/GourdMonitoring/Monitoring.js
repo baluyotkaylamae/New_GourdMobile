@@ -3,6 +3,8 @@ const Monitoring = require('../../models/Monitoring'); // Adjust the path as nee
 const cloudinary = require("cloudinary").v2;
 const upload = require('../../config/multer');
 const router = express.Router();
+const { pushNotification } = require('../../utils/Notification');
+const cron = require('node-cron');
 
 // Get all monitoring records
 router.get('/', async (req, res) => {
@@ -168,6 +170,55 @@ router.delete('/:id', async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
+});
+
+async function checkFinalizationAndNotify() {
+    try {
+        const today = new Date(); // Get today's date
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0)); // Start of the day
+        const endOfDay = new Date(today.setHours(23, 59, 59, 999)); // End of the day
+
+        console.log('Querying monitorings with dateOfFinalization between:', startOfDay, 'and', endOfDay);
+
+        const monitorings = await Monitoring.find({
+            dateOfFinalization: { $gte: startOfDay, $lte: endOfDay },
+        }).populate('userID').populate('gourdType');
+
+        console.log('Raw monitorings:', monitorings);
+
+        if (monitorings.length === 0) {
+            console.log('No monitorings found for today.');
+            return;
+        }
+
+        console.log(`Found ${monitorings.length} monitoring(s) with today's dateOfFinalization.`);
+
+        for (const monitoring of monitorings) {
+            const user = monitoring.userID;
+            if (user && user.pushToken) {
+                console.log(`Sending notification to user: ${user.name} (Push Token: ${user.pushToken})`);
+
+                const data = {
+                    title: "START YOUR HARVEST!",
+                    message: `Gourd: ${monitoring.gourdType.name}\nPollinated: ${monitoring.pollinatedFlowers}\nHarvest: ${monitoring.fruitsHarvested || 0}\nPlot: ${monitoring.plotNo || 'N/A'}`,
+                    data: { monitoringId: monitoring._id },
+                };
+
+                const result = await pushNotification(data, user.pushToken); // Send notification to the user's push token
+                console.log(`Notification sent successfully for user: ${user.name}`, result);
+            } else {
+                console.log(`User ${user ? user.name : 'unknown'} does not have a valid push token.`);
+            }
+        }
+    } catch (error) {
+        console.error('Error checking finalization and notifying users:', error);
+    }
+}
+
+// Schedule the function to run daily
+cron.schedule("*/2 * * * *", () => {
+    console.log('Running daily finalization notification check...');
+    checkFinalizationAndNotify();
 });
 
 module.exports = router;

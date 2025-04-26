@@ -74,7 +74,8 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign(
             {
                 userId: user.id,
-                isAdmin: user.isAdmin
+                isAdmin: user.isAdmin,
+                pushToken: user.pushToken
             },
             secret,
             { expiresIn: '1d' }
@@ -248,7 +249,6 @@ router.patch('/:id/role', async (req, res) => {
       res.status(500).json({ success: false, message: 'Internal server error' });
     }
   });
-  
 
 // Helper function to send JWT token
 function sendToken(user, statusCode, res) {
@@ -263,5 +263,30 @@ function sendToken(user, statusCode, res) {
     );
     res.status(statusCode).send({ user: user.email, token });
 }
+
+router.put("/update-push-token/:id", async (req, res) => {
+    try {
+              const { expoPushToken } = req.body;
+              if (!expoPushToken) {
+                return res.status(400).json({ message: "Push token is required" });
+              }
+          
+              const user = await User.findByIdAndUpdate(
+                req.params.id,
+                { pushToken: expoPushToken },
+                { new: true }
+              );
+              if (!user) {
+                return res.status(404).json({ message: "User not found" });
+              }
+          
+              res.status(200).json({
+                message: "Push token updated successfully",
+                pushToken: user.pushToken,
+              });
+    }
+    catch (error) {}
+})
+
 
 module.exports = router;

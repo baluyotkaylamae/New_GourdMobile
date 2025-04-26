@@ -2,7 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const { Chat } = require("../models/chat");
 const { User } = require("../models/user");
-const authJwt = require('../helpers/jwt'); 
+const authJwt = require('../helpers/jwt');
+const { pushNotification } = require('../utils/Notification');
 const router = express.Router();
 
 // // Fetch all chat messages (general)
@@ -115,6 +116,18 @@ router.post("/messages", async (req, res) => {
                 message: "Recipient, sender, and message are required",
             });
         }
+        const recipient = await User.findById(user);
+        const data = {
+            title: "New Message",
+            body: message,
+            data: {
+                sender: sender,
+                message: message,
+                room: room || "general",
+            },
+        };
+
+        await pushNotification(data, recipient.pushToken); // Send notification to the recipient
 
         const newChat = new Chat({
             user,
