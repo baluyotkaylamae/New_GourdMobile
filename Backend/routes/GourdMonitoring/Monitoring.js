@@ -216,8 +216,8 @@ async function checkFinalizationAndNotify() {
 }
 
 // Schedule the function to run daily
-cron.schedule("*/2 * * * *", () => {
-    console.log('Running daily finalization notification check...');
+cron.schedule('0 5 * * *', () => {
+    console.log('Running daily finalization notification check at 5:00 AM...');
     checkFinalizationAndNotify();
 });
 
