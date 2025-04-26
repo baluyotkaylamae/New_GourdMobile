@@ -6,7 +6,10 @@ import baseURL from '../assets/common/baseurl';
 import AuthGlobal from '../Context/Store/AuthGlobal';
 import { useFocusEffect } from '@react-navigation/native';
 
+// Import the function to register for push notifications
 const MonitoringTab = ({ data, onUpdate }) => {
+  
+  
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [harvestInput, setHarvestInput] = useState("");

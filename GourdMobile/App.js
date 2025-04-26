@@ -6,6 +6,15 @@ import Auth from "./Context/Apps/Auth";
 import Main from './Navigator/Main'; // Adjust the path
 import { socket } from './socket';
 import { useEffect } from 'react';
+import * as Notifications from "expo-notifications";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 export default function App() {
   useEffect(() => { // Add useEffect

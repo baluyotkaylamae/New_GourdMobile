@@ -6,28 +6,28 @@
 // }
 // export default baseURL;
 
-// import { Platform } from 'react-native';
-
-// let baseURL = '';
-
-// if (Platform.OS === 'android') {
-//     baseURL = 'http://192.168.1.9:4000/api/v1/';
-// } else {
-//     baseURL = 'https://backend-nryq.onrender.com/api/v1/';
-// }
-
-// export default baseURL;
-
-
-
 import { Platform } from 'react-native';
 
 let baseURL = '';
 
 if (Platform.OS === 'android') {
-    baseURL = 'https://backend-nryq.onrender.com/api/v1/';
+    baseURL = 'http://192.168.100.220:4000/api/v1/';
 } else {
     baseURL = 'https://backend-nryq.onrender.com/api/v1/';
 }
 
 export default baseURL;
+
+
+
+// import { Platform } from 'react-native';
+
+// let baseURL = '';
+
+// if (Platform.OS === 'android') {
+//     baseURL = 'https://backend-nryq.onrender.com/api/v1/';
+// } else {
+//     baseURL = 'https://backend-nryq.onrender.com/api/v1/';
+// }
+
+// export default baseURL;

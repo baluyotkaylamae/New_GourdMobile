@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons'; // Import an icon library
 import MainTabs from './MainTabs';
@@ -10,12 +10,26 @@ import AuthGlobal from '../Context/Store/AuthGlobal';
 import CustomDrawerContent from './CustomDrawerContent';
 import CreatePost from '../screens/Post/createPost';
 import Dashboard from '../screens/User/DashboardScreen';
-
 const Drawer = createDrawerNavigator();
+import { registerForPushNotificationsAsync } from '../utils/Notification';
+import baseURL from '../assets/common/baseurl';
 
 const DrawerNavigator = () => {
   const context = useContext(AuthGlobal);
   const isAdmin = context.stateUser && context.stateUser.user && context.stateUser.user.isAdmin;
+  const [user, setUser] = useState(context.stateUser && context.stateUser.user);
+
+  console.log("User in DrawerNavigator:", user);
+  useEffect(() => {
+      const registerForPushNotifications = async () => {
+        try {
+          await registerForPushNotificationsAsync(baseURL, user.pushToken, user.userId);
+        } catch (error) {
+          console.error("Error registering for push notifications:", error);
+        }
+      }
+      registerForPushNotifications()
+    }, []);
 
   return (
     <Drawer.Navigator

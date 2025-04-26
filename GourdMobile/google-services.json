@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "899566003981",
+    "project_id": "gourdtify-9ed4a",
+    "storage_bucket": "gourdtify-9ed4a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:899566003981:android:ed509c2babf548d6763244",
+        "android_client_info": {
+          "package_name": "com.kaylamae.GourdMobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVzdCK852BmrPKNAoRaQO2jCktz-dUTd0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
