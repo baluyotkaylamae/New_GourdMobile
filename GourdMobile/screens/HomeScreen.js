@@ -302,13 +302,7 @@ const LandingPage = ({ navigation }) => {
                     <Text style={styles.replyLink}>Reply</Text>
                   </TouchableOpacity>
                   {/* Replies */}
-                  {comment.replies.length > 1 && (
-                    <TouchableOpacity onPress={() => toggleReplies(comment._id)}>
-                      <Text style={styles.replyButton}>
-                        {expandedReplies[comment._id] ? 'See Less Replies' : `See More Replies (${comment.replies.length})`}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+
                   {(expandedReplies[comment._id] ? comment.replies : comment.replies.slice(0, 1)).map(reply => {
                     const replyOwnerId = reply.user?._id || reply.user?.userId;
                     return (
@@ -341,6 +335,13 @@ const LandingPage = ({ navigation }) => {
                       </View>
                     );
                   })}
+                  {comment.replies.length > 1 && (
+                    <TouchableOpacity onPress={() => toggleReplies(comment._id)}>
+                      <Text style={styles.replyButton}>
+                        {expandedReplies[comment._id] ? 'See Less Replies' : `See More Replies (${comment.replies.length})`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );
