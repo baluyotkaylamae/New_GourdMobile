@@ -21,20 +21,24 @@ const DrawerNavigator = () => {
 
   console.log("User in DrawerNavigator:", user);
   useEffect(() => {
-      const registerForPushNotifications = async () => {
-        try {
-          await registerForPushNotificationsAsync(baseURL, user.pushToken, user.userId);
-        } catch (error) {
-          console.error("Error registering for push notifications:", error);
-        }
+    const registerForPushNotifications = async () => {
+      try {
+        await registerForPushNotificationsAsync(baseURL, user.pushToken, user.userId);
+      } catch (error) {
+        console.error("Error registering for push notifications:", error);
       }
-      registerForPushNotifications()
-    }, []);
+    }
+    registerForPushNotifications()
+  }, []);
 
   return (
     <Drawer.Navigator
       initialRouteName="Home"
       drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={{
+        drawerActiveTintColor: '#9EBC8A', // Active label and icon color
+        drawerInactiveTintColor: '#888',  // Inactive color (optional)
+      }}
     >
       <Drawer.Screen
         name="Home"

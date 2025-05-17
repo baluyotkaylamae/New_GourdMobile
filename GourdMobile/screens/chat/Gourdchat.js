@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,67 +8,123 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../../assets/common/baseurl';
 import AuthGlobal from '../../Context/Store/AuthGlobal';
 
+// Avatar placeholder
+const AVATAR_PLACEHOLDER = 'https://ui-avatars.com/api/?background=8e44ad&color=fff&name=User';
+
+// Helper function for formatting chat timestamps
+function formatChatTimestamp(dateString) {
+  if (!dateString) return '';
+  const now = new Date();
+  const msgDate = new Date(dateString);
+
+  const nowDay = now.getDate();
+  const nowMonth = now.getMonth();
+  const nowYear = now.getFullYear();
+
+  const msgDay = msgDate.getDate();
+  const msgMonth = msgDate.getMonth();
+  const msgYear = msgDate.getFullYear();
+
+  // If same year, month, and day: show time
+  if (nowYear === msgYear && nowMonth === msgMonth && nowDay === msgDay) {
+    return msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Check for 'Yesterday'
+  const yesterday = new Date(now);
+  yesterday.setDate(nowDay - 1);
+  if (
+    msgYear === yesterday.getFullYear() &&
+    msgMonth === yesterday.getMonth() &&
+    msgDay === yesterday.getDate()
+  ) {
+    return 'Yesterday';
+  }
+
+  // Check if this week (but not today/yesterday)
+  // Get Sunday as first day of week
+  const weekStart = new Date(now);
+  weekStart.setDate(nowDay - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  if (
+    msgDate > weekStart &&
+    !(nowYear === msgYear && nowMonth === msgMonth && nowDay === msgDay) &&
+    !(
+      msgYear === yesterday.getFullYear() &&
+      msgMonth === yesterday.getMonth() &&
+      msgDay === yesterday.getDate()
+    )
+  ) {
+    // e.g., Monday, Tuesday, etc.
+    return msgDate.toLocaleDateString([], { weekday: 'long' });
+  }
+
+  // Else: show Month Day, e.g., May 15
+  return msgDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 const ChatScreen = ({ navigation }) => {
   const context = useContext(AuthGlobal);
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]); // State for filtered users
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [token, setToken] = useState('');
-  const [triggerRefresh, setTriggerRefresh] = useState(false);  // Add triggerRefresh state
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  const [searchText, setSearchText] = useState('');  // State for search text
+  const [searchText, setSearchText] = useState('');
 
   const currentUserId = context.stateUser?.user?.userId;
 
+  // Fetch users and chats
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const storedToken = await AsyncStorage.getItem('jwt');
+      if (!storedToken) throw new Error('No token found');
+      setToken(storedToken);
+
+      const [usersResponse, chatsResponse] = await Promise.all([
+        fetch(`${baseURL}users`, { headers: { Authorization: `Bearer ${storedToken}` } }),
+        fetch(`${baseURL}chat/chats`, { headers: { Authorization: `Bearer ${storedToken}` } }),
+      ]);
+
+      if (!usersResponse.ok) throw new Error('Failed to fetch users');
+      if (!chatsResponse.ok) throw new Error('Failed to fetch chats');
+
+      const usersData = await usersResponse.json();
+      setUsers(usersData);
+      setFilteredUsers(usersData);
+
+      const chatsData = await chatsResponse.json();
+      setChats(consolidateChats(chatsData.chats || []));
+    } catch (err) {
+      setError(err.message || 'Unknown error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [currentUserId]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const storedToken = await AsyncStorage.getItem('jwt');
-        if (!storedToken) throw new Error('No token found');
-        setToken(storedToken);
-
-        const usersResponse = await fetch(`${baseURL}users`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
-        if (!usersResponse.ok) throw new Error('Failed to fetch users');
-        const usersData = await usersResponse.json();
-        setUsers(usersData);
-        setFilteredUsers(usersData); // Set the users initially
-
-        const chatsResponse = await fetch(`${baseURL}chat/chats`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
-        if (!chatsResponse.ok) throw new Error('Failed to fetch chats');
-        const chatsData = await chatsResponse.json();
-        setChats(consolidateChats(chatsData.chats || []));
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, [currentUserId, triggerRefresh]);  // Depend on triggerRefresh to refresh data
+  }, [fetchData]);
 
+  // Consolidate chats by user
   const consolidateChats = (chatsList) => {
     const chatPairMap = new Map();
     chatsList.forEach((chat) => {
       if (!chat.sender || !chat.user) return;
       if (chat.sender._id !== currentUserId && chat.user._id !== currentUserId) return;
-
       const otherUser = chat.sender._id === currentUserId ? chat.user : chat.sender;
       const chatPairKey = otherUser._id;
-
       if (!chatPairMap.has(chatPairKey)) {
         chatPairMap.set(chatPairKey, { ...chat, otherUser });
       } else {
@@ -78,25 +134,53 @@ const ChatScreen = ({ navigation }) => {
         }
       }
     });
-
     return Array.from(chatPairMap.values()).sort(
       (a, b) => new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp)
     );
   };
 
-  const handleUserClick = (userId, userName) => navigation.navigate('UserChatScreen', { userId, name: userName });
-  const handleChatClick = (chatId, userId, userName) => navigation.navigate('UserChatScreen', { chatId, userId, name: userName });
+  // Search/filter users
+  const handleSearchChange = (text) => {
+    setSearchText(text);
+    if (text.trim() === '') {
+      setFilteredUsers(users);
+    } else {
+      const query = text.toLowerCase();
+      setFilteredUsers(
+        users.filter(
+          (u) => u.name && u.name.toLowerCase().includes(query)
+        )
+      );
+    }
+  };
 
+  // Navigation handlers
+  const handleUserClick = (userId, userName) =>
+    navigation.navigate('UserChatScreen', { userId, name: userName });
+  const handleChatClick = (chatId, userId, userName) =>
+    navigation.navigate('UserChatScreen', { chatId, userId, name: userName });
+
+  // Pull-to-refresh
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData();
+  };
+
+  // UI Components
   const renderUserItem = ({ item }) => (
-    <TouchableOpacity onPress={() => handleUserClick(item._id, item.name)} style={styles.userCard}>
+    <TouchableOpacity
+      onPress={() => handleUserClick(item._id, item.name)}
+      style={styles.userCard}
+      activeOpacity={0.8}
+    >
       <View style={styles.avatarContainer}>
         <Image
-          source={{ uri: item.image || 'https://via.placeholder.com/50' }}
+          source={{ uri: item.image || AVATAR_PLACEHOLDER }}
           style={styles.userAvatar}
         />
-        {item.isOnline && <View style={styles.onlineIndicator}></View>}
+        {item.isOnline && <View style={styles.onlineIndicator} />}
       </View>
-      <Text style={styles.userName}>{item.name}</Text>
+      <Text style={styles.userName} numberOfLines={1}>{item.name}</Text>
     </TouchableOpacity>
   );
 
@@ -105,208 +189,222 @@ const ChatScreen = ({ navigation }) => {
       onPress={() => handleChatClick(item._id, item.otherUser._id, item.otherUser.name)}
       style={[
         styles.chatCard,
-        item.lastMessageIsRead === false && styles.unreadChatCard,  // Apply highlight if message is unread
+        !item.lastMessageIsRead && styles.unreadChatCard,
       ]}
+      activeOpacity={0.85}
     >
       <Image
-        source={{ uri: item.otherUser.image || 'https://via.placeholder.com/50' }}
+        source={{ uri: item.otherUser.image || AVATAR_PLACEHOLDER }}
         style={styles.chatAvatar}
       />
       <View style={styles.chatContent}>
-        <Text style={styles.chatUser}>{item.otherUser.name}</Text>
-        <Text style={styles.chatMessage}>{item.lastMessage}</Text>
-        <Text style={styles.chatTimestamp}>
-          {new Date(item.lastMessageTimestamp).toLocaleTimeString()}
+        <View style={styles.chatTopRow}>
+          <Text style={styles.chatUser} numberOfLines={1}>{item.otherUser.name}</Text>
+          <Text style={styles.chatTimestamp}>
+            {item.lastMessageTimestamp
+              ? formatChatTimestamp(item.lastMessageTimestamp)
+              : ''}
+          </Text>
+        </View>
+        <Text
+          style={[
+            styles.chatMessage,
+            !item.lastMessageIsRead && styles.chatMessageUnread
+          ]}
+          numberOfLines={1}
+        >
+          {item.lastMessage || ''}
         </Text>
       </View>
     </TouchableOpacity>
   );
 
-  // Trigger refresh whenever the data is required to be refreshed
-  const handleRefresh = () => {
-    setTriggerRefresh((prev) => !prev);  // Toggle refresh state
-  };
-
-  // Handle search text change and filter users
-  const handleSearchChange = (text) => {
-    setSearchText(text);
-  
-    if (text === '') {
-      setFilteredUsers(users); // Show all users if search text is empty
-    } else {
-      const filtered = users.filter((user) => {
-        // Check if the characters in searchText appear anywhere in the user name
-        const userName = user.name.toLowerCase();
-        const searchQuery = text.toLowerCase();
-        return searchQuery.split('').every(char => userName.includes(char));
-      });
-      setFilteredUsers(filtered); // Show filtered users based on name
-    }
-  };
-
   return (
     <View style={styles.container}>
-      {/* <Text style={styles.header}>Chats</Text> */}
-
-      {/* Search Box */}
+      <Text style={styles.header}>Chats</Text>
       <TextInput
         style={styles.searchInput}
-        placeholder="Search for users..."
+        placeholder="Search users..."
         value={searchText}
-        onChangeText={handleSearchChange} // Trigger filtering
+        onChangeText={handleSearchChange}
+        placeholderTextColor="#b2bec3"
       />
-
       {loading ? (
-        <ActivityIndicator size="large" color="#0078d4" />
+        <ActivityIndicator size="large" color="#388E3C" style={{ marginTop: 40 }} />
       ) : error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : (
         <>
-          {/* User List with Search Functionality */}
           <FlatList
-            data={filteredUsers} // Use filtered users for display
+            data={filteredUsers}
             renderItem={renderUserItem}
             keyExtractor={(item) => item._id || item.name}
             horizontal
             showsHorizontalScrollIndicator={false}
-            refreshing={loading}
-            onRefresh={handleRefresh}
+            style={styles.userList}
+            contentContainerStyle={{ paddingVertical: 8 }}
           />
-
-          {/* Spacer */}
-          <View style={{ marginVertical: 10 }} />
-
-          {/* Chats List */}
+          <View style={{ marginVertical: 12 }} />
           <FlatList
-            data={chats} // Use chats data here
+            data={chats}
             renderItem={renderChatItem}
-            keyExtractor={(item) => `${item.chatId}-${item.otherUser._id}`}
-            refreshing={loading}
-            onRefresh={handleRefresh}
+            keyExtractor={(item) => `${item._id}-${item.otherUser._id}`}
+            contentContainerStyle={chats.length === 0 && { flex: 1, justifyContent: 'center' }}
+            ListEmptyComponent={
+              <Text style={styles.emptyChatsText}>No recent chats. Start a conversation!</Text>
+            }
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8e44ad" />
+            }
           />
         </>
       )}
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9', // Light background for a clean look
-    paddingHorizontal: 10,
-    paddingTop: 20,
+    backgroundColor: '#FFFFFF', // light green
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
   header: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#2c3e50', // Darker text for better contrast
-    textAlign: 'center',
+    color: '#73946B', // dark green
+    marginTop: 10,
+    marginBottom: 16,
+    paddingHorizontal: 20,
   },
   searchInput: {
-    height: 45,
-    borderColor: '#dcdde1',
+    height: 44,
+    marginHorizontal: 20,
+    marginBottom: 10,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    borderColor: '#73946B', // light green border
     borderWidth: 1,
-    borderRadius: 25,
-    paddingLeft: 15,
-    marginBottom: 20,
-    backgroundColor: '#ffffff', // White background for input
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3, // Shadow for Android
+    paddingLeft: 18,
+    fontSize: 15,
+    shadowColor: '#73946B', // green shadow
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  userList: {
+    minHeight: 95,
+    paddingLeft: 10,
   },
   userCard: {
     alignItems: 'center',
-    marginRight: 15,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginRight: 16,
+    width: 75,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   avatarContainer: {
     position: 'relative',
+    marginBottom: 5,
   },
   userAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 55,
+    height: 55,
+    borderRadius: 28,
     borderWidth: 2,
-    borderColor: '#3498db', // Blue border for a modern touch
-  },
-  userName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#34495e',
-    textAlign: 'center',
-    marginTop: 8,
+    borderColor: '#73946B', // green border
+    backgroundColor: '#73946B', // light green
   },
   onlineIndicator: {
     position: 'absolute',
-    bottom: 5,
-    right: 5,
-    width: 14,
-    height: 14,
+    bottom: 4,
+    right: 4,
+    width: 13,
+    height: 13,
     borderRadius: 7,
-    backgroundColor: '#2ecc71', // Green for online status
+    backgroundColor: '#2ecc71', // accent green
     borderWidth: 2,
-    borderColor: '#ffffff',
+    borderColor: '#fff',
+  },
+  userName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#222831', // dark green
+    textAlign: 'center',
+    maxWidth: 70,
   },
   chatCard: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderRadius: 15,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 20,
     marginBottom: 12,
-    padding: 15,
+    padding: 13,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    alignItems: 'center',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   unreadChatCard: {
-    backgroundColor: '#eafaf1', // Light green for unread messages
+    backgroundColor: '#C8E6C9', // light green for unread
   },
   chatAvatar: {
-    width: 55,
-    height: 55,
-    borderRadius: 27.5,
-    marginRight: 15,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 11,
     borderWidth: 2,
-    borderColor: '#8e44ad', // Purple border for a modern look
+    borderColor: '#73946B', // green border
+    backgroundColor: '#73946B', // light green
   },
   chatContent: {
     flex: 1,
     justifyContent: 'center',
   },
+  chatTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   chatUser: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2c3e50',
-  },
-  chatMessage: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginTop: 5,
-    fontStyle: 'italic', // Italic for message preview
+    color: '#537D5D', // dark green
+    flex: 1,
+    marginRight: 8,
   },
   chatTimestamp: {
     fontSize: 12,
-    color: '#95a5a6',
-    marginTop: 5,
+    color: '#222831', // medium green
+    minWidth: 52,
     textAlign: 'right',
   },
-  errorText: {
-    color: '#e74c3c', // Red for error messages
-    textAlign: 'center',
-    marginTop: 20,
+  chatMessage: {
+    fontSize: 14,
+    color: '#222831', // dark green
+    marginTop: 3,
+  },
+  chatMessageUnread: {
     fontWeight: 'bold',
+    color: '#73946B', // primary green
+  },
+  emptyChatsText: {
+    color: '#9EBC8A', // medium green
+    textAlign: 'center',
+    marginTop: 40,
+    fontStyle: 'italic',
+    fontSize: 16,
+  },
+  errorText: {
+    color: '#e74c3c',
+    textAlign: 'center',
+    marginTop: 32,
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

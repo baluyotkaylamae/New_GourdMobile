@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import {
   View, Text, FlatList, StyleSheet, ActivityIndicator, Image,
-  TouchableOpacity, Alert, TextInput, Modal, Button
+  TouchableOpacity, Alert, TextInput, Modal, Button, TouchableWithoutFeedback, Keyboard
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../assets/common/baseurl';
@@ -11,6 +11,7 @@ import { Menu, Provider } from 'react-native-paper';
 import Swiper from "react-native-swiper";
 import { filterBadWords } from './filteredwords'; // Adjust the path as necessary
 import CreatePost from '../screens/Post/createPost';
+import { MaterialIcons } from '@expo/vector-icons'; // Expo icon for send
 
 const LandingPage = ({ navigation }) => {
   const context = useContext(AuthGlobal);
@@ -83,7 +84,6 @@ const LandingPage = ({ navigation }) => {
     setFilteredForums(filtered);
   };
 
-
   const triggerRefresh = () => setRefresh(!refresh);
 
   const handleLikePost = async (postId) => {
@@ -114,7 +114,6 @@ const LandingPage = ({ navigation }) => {
       Alert.alert('Error', 'Could not like the post.');
     }
   };
-
 
   const handleAddComment = async (postId) => {
     const filteredComment = filterBadWords(comment); // Filter the comment
@@ -173,7 +172,6 @@ const LandingPage = ({ navigation }) => {
     }
   };
 
-
   const toggleReplies = (commentId) => {
     setExpandedReplies(prev => ({ ...prev, [commentId]: !prev[commentId] }));
   };
@@ -184,14 +182,12 @@ const LandingPage = ({ navigation }) => {
 
   const
     handleEditComment = (postId, commentId, currentContent) => {
-      console.log('Before navigation:', { commentId, currentContent, postId });
       navigation.navigate('UpdateComment', {
         postId: postId,
-        commentId: commentId,  // Correcting to use commentId
+        commentId: commentId,
         currentContent: currentContent
       });
     };
-
 
   const approvedForums = forums.filter(post => post.status === "Approved");
   const renderForumItem = ({ item }) => {
@@ -238,11 +234,10 @@ const LandingPage = ({ navigation }) => {
           </View>
         )}
 
-
         {/* Likes and comments section */}
         <View style={styles.likesCommentsContainer}>
           <TouchableOpacity style={styles.likeButton} onPress={() => handleLikePost(item._id)}>
-            <Icon name="thumbs-up" size={16} color="#007AFF" style={styles.likeIcon} />
+            <Icon name="thumbs-up" size={16} color="#A4B465" style={styles.likeIcon} />
             <Text style={styles.likesText}>{item.likes} Likes</Text>
           </TouchableOpacity>
           <View style={styles.divider} />
@@ -275,7 +270,7 @@ const LandingPage = ({ navigation }) => {
                   </Menu>
 
                   {/* Reply section */}
-                  <TouchableOpacity onPress={() => setSelectedPostId(item._id) || setSelectedCommentId(comment._id) || setShowReplyModal(true)}>
+                  <TouchableOpacity onPress={() => (setSelectedPostId(item._id), setSelectedCommentId(comment._id), setShowReplyModal(true))}>
                     <Text style={styles.replyLink}>Reply</Text>
                   </TouchableOpacity>
 
@@ -324,20 +319,26 @@ const LandingPage = ({ navigation }) => {
           </TouchableOpacity>
         )}
 
-        {/* Comment Input */}
-        <View style={styles.commentInputContainer}>
+        {/* Comment Input - Modern style */}
+        <View style={styles.commentInputContainerModern}>
           <TextInput
-            style={styles.commentInput}
+            style={styles.commentInputModern}
             placeholder="Add a comment..."
             value={comment}
             onChangeText={setComment}
+            placeholderTextColor="#888"
           />
-          <Button title="Comment" onPress={() => handleAddComment(item._id)} />
+          <TouchableOpacity
+            style={styles.commentSendButton}
+            onPress={() => handleAddComment(item._id)}
+            disabled={!comment.trim()}
+          >
+            <MaterialIcons name="send" size={22} color={comment.trim() ? "#007AFF" : "#ccc"} />
+          </TouchableOpacity>
         </View>
       </View>
     );
   };
-
 
   const handleReplyMenuPress = (replyId) => {
     const updatedForums = forums.map(forum => ({
@@ -461,7 +462,6 @@ const LandingPage = ({ navigation }) => {
     }
   };
 
-
   return (
     loading ? <ActivityIndicator size="large" color="#0000ff" /> :
       error ? <Text>{error}</Text> :
@@ -482,23 +482,42 @@ const LandingPage = ({ navigation }) => {
               </TouchableOpacity>
             </View>
             <FlatList
-             data={searchQuery ? filteredForums.filter(post => post.status === "Approved") : forums.filter(post => post.status === "Approved")}
+              data={searchQuery ? filteredForums.filter(post => post.status === "Approved") : forums.filter(post => post.status === "Approved")}
               renderItem={renderForumItem}
               keyExtractor={(item) => item._id}
               onRefresh={triggerRefresh}
               refreshing={loading}
             />
-            <Modal visible={showReplyModal} animationType="slide">
-              <View style={styles.modalContainer}>
-                <TextInput
-                  style={styles.replyInput}
-                  placeholder="Write a reply..."
-                  value={reply}
-                  onChangeText={setReply}
-                />
-                <Button title="Send Reply" onPress={handleAddReply} />
-                <Button title="Close" onPress={() => setShowReplyModal(false)} />
-              </View>
+            <Modal
+              visible={showReplyModal}
+              animationType="slide"
+              transparent
+              onRequestClose={() => setShowReplyModal(false)}
+            >
+              <TouchableWithoutFeedback onPress={() => setShowReplyModal(false)}>
+                <View style={styles.replyModalOverlay}>
+                  <TouchableWithoutFeedback onPress={() => { }}>
+                    <View style={styles.replyModalContainer}>
+                      <View style={styles.commentInputContainerModern}>
+                        <TextInput
+                          style={styles.commentInputModern}
+                          placeholder="Write a reply..."
+                          value={reply}
+                          onChangeText={setReply}
+                          placeholderTextColor="#888"
+                        />
+                        <TouchableOpacity
+                          style={styles.commentSendButton}
+                          onPress={handleAddReply}
+                          disabled={!reply.trim()}
+                        >
+                          <MaterialIcons name="send" size={22} color={reply.trim() ? "#007AFF" : "#ccc"} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </TouchableWithoutFeedback>
+                </View>
+              </TouchableWithoutFeedback>
             </Modal>
             <TouchableOpacity
               style={styles.fab}
@@ -509,15 +528,14 @@ const LandingPage = ({ navigation }) => {
           </View>
         </Provider>
   );
-
 };
+
 const styles = StyleSheet.create({
   carousel: {
     flex: 1,
     margin: 0, // Ensure no margins are set
     padding: 0, // Ensures no overflow
   },
-
   carouselImage: {
     width: '100%',
     height: '100%',
@@ -531,7 +549,6 @@ const styles = StyleSheet.create({
     bottom: 10, // Adjust as needed
     alignSelf: 'center',
   },
-
   likesCommentsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -551,7 +568,7 @@ const styles = StyleSheet.create({
   },
   likesText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#A4B465',
   },
   divider: {
     width: 1,
@@ -612,7 +629,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   likesText: {
-    color: '#007bff',
+    color: '#A4B465',
   },
   commentsContainer: {
     marginTop: 10,
@@ -671,11 +688,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   replyButton: {
-    color: '#007bff',
+    color: '#A4B465',
     marginTop: 5,
   },
   replyLink: {
-    color: '#007bff',
+    color: '#A4B465',
     marginTop: 5,
   },
   commentInputContainer: {
@@ -690,6 +707,33 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     marginRight: 10,
+  },
+  // Modern input for comment with icon
+  commentInputContainerModern: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 25,
+    backgroundColor: '#f9f9f9',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  commentInputModern: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    color: '#222',
+  },
+  commentSendButton: {
+    paddingHorizontal: 5,
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalContainer: {
     flex: 1,
@@ -729,7 +773,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     right: 20,
-    backgroundColor: '#007BFF',
+    backgroundColor: '#A4B465',
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -753,12 +797,32 @@ const styles = StyleSheet.create({
     height: 40,
   },
   searchButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#A4B465',
     padding: 10,
     borderRadius: 20,
     marginLeft: 10,
-  }
+  },
+  replyModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  replyModalContainer: {
+    backgroundColor: '#fff',
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+    elevation: 10,
+  },
+  closeReplyModalButton: {
+    alignSelf: 'center',
+    marginTop: 10,
+    padding: 8,
+  },
+  closeReplyModalText: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
-
 
 export default LandingPage;

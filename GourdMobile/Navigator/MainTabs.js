@@ -18,7 +18,7 @@ const MainTabs = () => {
         tabBarHideOnKeyboard: true,
         tabBarShowLabel: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: "#4DA674", // Active icon color
+        tabBarActiveTintColor: "#FFFFFF", // Active icon color
         tabBarInactiveTintColor: "#6A6A6A", // Inactive icon color
       }}
     >
@@ -72,11 +72,13 @@ const MainTabs = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: "#C3E8C9",
+    backgroundColor: "#73946B",
     borderTopWidth: 0,
     elevation: 5,
-    height: 70,
+    height: 75,
     paddingBottom: 10,
+    borderTopEndRadius: 20,
+    borderTopStartRadius: 20,
   },
 });
 

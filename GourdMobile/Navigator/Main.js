@@ -6,6 +6,8 @@ import AuthGlobal from "../Context/Store/AuthGlobal";
 import LoginScreen from "../screens/User/Login";
 import DrawerNavigator from "./DrawerNavigator";
 import { jwtDecode } from "jwt-decode";
+import UpdateComment from '../screens/Post/UpdateComment';
+import UpdateReply from '../screens/Post/UpdateReplies';
 
 const Stack = createNativeStackNavigator();
 
@@ -48,11 +50,23 @@ const Main = () => {
     return (
         <Stack.Navigator>
             {isAuthenticated ? (
-                <Stack.Screen
-                    name="MainTabs"
-                    component={DrawerNavigator}
-                    options={{ headerShown: false }}
-                />
+                <>
+                    <Stack.Screen
+                        name="MainTabs"
+                        component={DrawerNavigator}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="UpdateComment"
+                        component={UpdateComment}
+                        options={{ title: "Update Comment" }}
+                    />
+                    <Stack.Screen
+                        name="UpdateReply"
+                        component={UpdateReply}
+                        options={{ title: "Update Reply" }}
+                    />
+                </>
             ) : (
                 <Stack.Screen
                     name="Login"
@@ -69,7 +83,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center", // Center the content
-        backgroundColor: "#ffffff", // Optional: Add a background color
+        backgroundColor: "#FFFFFF", // Optional: Add a background color
     },
 });
 
