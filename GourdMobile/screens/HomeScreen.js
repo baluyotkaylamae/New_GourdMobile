@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import {
   View, Text, FlatList, StyleSheet, ActivityIndicator, Image,
-  TouchableOpacity, Alert, TextInput, Modal, Button, TouchableWithoutFeedback, Keyboard
+  TouchableOpacity, Alert, TextInput, Modal, TouchableWithoutFeedback
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../assets/common/baseurl';
@@ -10,8 +10,22 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { Menu, Provider } from 'react-native-paper';
 import Swiper from "react-native-swiper";
 import { filterBadWords } from './filteredwords'; // Adjust the path as necessary
-import CreatePost from '../screens/Post/createPost';
 import { MaterialIcons } from '@expo/vector-icons'; // Expo icon for send
+
+// Helper function to format date/time
+const formatDateOrTime = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffHrs = diffMs / (1000 * 60 * 60);
+
+  if (diffHrs > 24) {
+    return date.toLocaleDateString();
+  } else {
+    // Only show hour and minute, no date
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+};
 
 const LandingPage = ({ navigation }) => {
   const context = useContext(AuthGlobal);
@@ -28,9 +42,14 @@ const LandingPage = ({ navigation }) => {
   const [expandedComments, setExpandedComments] = useState({});
   const [refresh, setRefresh] = useState(false);
   const [images, setImages] = useState([]);
-  const isAdmin = context?.user?.role === 'admin';
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredForums, setFilteredForums] = useState([]);
+
+  const currentUserId =
+    context?.stateUser?.user?.userId || // as per your AuthGlobal context
+    context?.user?.userId ||             // fallback
+    context?.user?._id ||                // fallback for some cases
+    null;
 
   useEffect(() => {
     const fetchForums = async () => {
@@ -59,7 +78,7 @@ const LandingPage = ({ navigation }) => {
 
         // Collect all images from the posts for the carousel
         const allImages = data.flatMap(post => post.images || []);
-        setImages(allImages); // Set images for the carousel
+        setImages(allImages);
       } catch (error) {
         setError('Error fetching forums');
       } finally {
@@ -84,21 +103,22 @@ const LandingPage = ({ navigation }) => {
     setFilteredForums(filtered);
   };
 
-  const triggerRefresh = () => setRefresh(!refresh);
+  const triggerRefresh = () => setRefresh(prev => !prev);
 
+  // FIXED handleLikePost
   const handleLikePost = async (postId) => {
     try {
+      const storedToken = token || await AsyncStorage.getItem('jwt');
       const response = await fetch(`${baseURL}posts/${postId}/like`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${storedToken}`,
           'Content-Type': 'application/json',
         },
       });
 
       if (response.ok) {
         const data = await response.json();
-
         setForums(prevForums =>
           prevForums.map(forum =>
             forum._id === postId
@@ -116,13 +136,11 @@ const LandingPage = ({ navigation }) => {
   };
 
   const handleAddComment = async (postId) => {
-    const filteredComment = filterBadWords(comment); // Filter the comment
-
-    if (filteredComment !== comment) { // If the comment was modified
-      setComment(filteredComment); // Update the comment to the filtered version
-      return; // Stop submission as the comment has been filtered
+    const filteredComment = filterBadWords(comment);
+    if (filteredComment !== comment) {
+      setComment(filteredComment);
+      return;
     }
-
     try {
       const response = await fetch(`${baseURL}posts/${postId}/comments`, {
         method: 'POST',
@@ -144,14 +162,11 @@ const LandingPage = ({ navigation }) => {
 
   const handleAddReply = async () => {
     if (!reply) return Alert.alert('Error', 'Reply cannot be empty');
-
-    const filteredReply = filterBadWords(reply); // Filter the reply
-
-    if (filteredReply !== reply) { // If the reply was modified
-      setReply(filteredReply); // Update the reply to the filtered version
-      return; // Stop submission as the reply has been filtered
+    const filteredReply = filterBadWords(reply);
+    if (filteredReply !== reply) {
+      setReply(filteredReply);
+      return;
     }
-
     try {
       const response = await fetch(`${baseURL}posts/${selectedPostId}/comments/${selectedCommentId}/replies`, {
         method: 'POST',
@@ -180,16 +195,14 @@ const LandingPage = ({ navigation }) => {
     setExpandedComments(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
-  const
-    handleEditComment = (postId, commentId, currentContent) => {
-      navigation.navigate('UpdateComment', {
-        postId: postId,
-        commentId: commentId,
-        currentContent: currentContent
-      });
-    };
+  const handleEditComment = (postId, commentId, currentContent) => {
+    navigation.navigate('UpdateComment', {
+      postId: postId,
+      commentId: commentId,
+      currentContent: currentContent
+    });
+  };
 
-  const approvedForums = forums.filter(post => post.status === "Approved");
   const renderForumItem = ({ item }) => {
     const isTopPost = item.likes === Math.max(...forums.map(post => post.likes));
     return (
@@ -203,17 +216,15 @@ const LandingPage = ({ navigation }) => {
           )}
           <Text style={styles.forumUser}>{item.user?.name || 'Unknown'}</Text>
         </View>
-        <Text style={styles.forumDate}>{new Date(item.createdAt).toLocaleString()}</Text>
+        <Text style={styles.forumDate}>{formatDateOrTime(item.createdAt)}</Text>
         <Text style={styles.forumTitle}>{item.title}</Text>
         <Text style={styles.forumContent}>{item.content}</Text>
-
-        {/* Carousel for images */}
         {item.images && item.images.length > 0 && (
           <View style={{ flex: 1 }}>
             <Swiper
-              style={{ height: 200 }} // Adjust height
+              style={{ height: 200 }}
               showsButtons={false}
-              paginationStyle={{ bottom: 10 }} // Adjust pagination position
+              paginationStyle={{ bottom: 10 }}
               autoplay
               autoplayTimeout={10}
             >
@@ -223,7 +234,7 @@ const LandingPage = ({ navigation }) => {
                   source={{ uri: image }}
                   style={{
                     width: '100%',
-                    height: 200, // Adjust as needed
+                    height: 200,
                     margin: 0,
                     padding: 0,
                     resizeMode: 'cover',
@@ -233,81 +244,103 @@ const LandingPage = ({ navigation }) => {
             </Swiper>
           </View>
         )}
-
-        {/* Likes and comments section */}
         <View style={styles.likesCommentsContainer}>
           <TouchableOpacity style={styles.likeButton} onPress={() => handleLikePost(item._id)}>
-            <Icon name="thumbs-up" size={16} color="#A4B465" style={styles.likeIcon} />
-            <Text style={styles.likesText}>{item.likes} Likes</Text>
+            <Icon
+              name="thumbs-up"
+              size={16}
+              color={
+                item.likedBy && item.likedBy.includes(currentUserId)
+                  ? "#A4B465" // Liked: green
+                  : "#ccc"    // Not liked: gray
+              }
+              style={styles.likeIcon}
+            />
+            <Text style={{ width: 6 }} />
+            <Text style={styles.likesText}>
+              {item.likes} {item.likes === 1 || item.likes === 0 ? 'Like' : 'Likes'}
+            </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
           <Text style={styles.commentCountText}>{item.comments.length} Comments</Text>
         </View>
-
-        {/* Comment section */}
         <View style={styles.commentsContainer}>
-          <Text style={styles.commentsHeader}>Comments:</Text>
           {item.comments.map((comment, index) => {
             if (!expandedComments[item._id] && index >= 1) return null;
+            const commentOwnerId = comment.user?._id || comment.user?.userId;
             return (
               <View key={comment._id} style={styles.comment}>
                 {comment.user?.image && (
                   <Image source={{ uri: comment.user.image }} style={styles.commentUserImage} />
                 )}
                 <View style={styles.commentTextContainer}>
-                  <Text style={styles.commentUser}>{comment.user?.name || 'Anonymous'}</Text>
-                  <Text style={styles.commentDate}>{new Date(comment.createdAt).toLocaleString()}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.commentUser}>{comment.user?.name || 'Anonymous'}</Text>
+                    <View style={{ flex: 1 }} />
+                    {commentOwnerId === currentUserId && (
+                      <Menu
+                        visible={comment.showMenu}
+                        onDismiss={() => handleMenuDismiss(comment._id)}
+                        anchor={
+                          <TouchableOpacity onPress={() => handleMenuPress(comment._id)}>
+                            <Icon name="ellipsis-v" size={20} color="#888" />
+                          </TouchableOpacity>
+                        }
+                      >
+                        <Menu.Item onPress={() => handleEditComment(item._id, comment._id, comment.content)} title="Edit Comment" />
+                        <Menu.Item onPress={() => handleDeleteComment(item._id, comment._id)} title="Delete Comment" />
+                      </Menu>
+                    )}
+                  </View>
+                  <Text style={styles.commentDate}>{formatDateOrTime(comment.createdAt)}</Text>
                   <Text style={styles.commentContent}>{comment.content}</Text>
-
-                  {/* Menu for comment actions */}
-                  <Menu
-                    visible={comment.showMenu}
-                    onDismiss={() => handleMenuDismiss(comment._id)}
-                    anchor={<TouchableOpacity onPress={() => handleMenuPress(comment._id)}><Icon name="ellipsis-v" size={20} color="#888" /></TouchableOpacity>}
-                  >
-                    <Menu.Item onPress={() => handleEditComment(item._id, comment._id, comment.content)} title="Edit Comment" />
-                    <Menu.Item onPress={() => handleDeleteComment(item._id, comment._id)} title="Delete Comment" />
-                  </Menu>
-
-                  {/* Reply section */}
-                  <TouchableOpacity onPress={() => (setSelectedPostId(item._id), setSelectedCommentId(comment._id), setShowReplyModal(true))}>
+                  <TouchableOpacity onPress={() => {
+                    setSelectedPostId(item._id);
+                    setSelectedCommentId(comment._id);
+                    setShowReplyModal(true);
+                  }}>
                     <Text style={styles.replyLink}>Reply</Text>
                   </TouchableOpacity>
-
                   {/* Replies */}
-                  {comment.replies && comment.replies.length > 0 && (
-                    <View style={styles.repliesContainer}>
-                      {comment.replies.slice(0, expandedReplies[comment._id] ? comment.replies.length : 1).map(reply => (
-                        <View key={reply._id} style={styles.reply}>
-                          {reply.user?.image && (
-                            <Image source={{ uri: reply.user.image }} style={styles.replyUserImage} />
-                          )}
-                          <View style={styles.replyTextContainer}>
-                            <Text style={styles.replyUser}>{reply.user?.name || 'Anonymous'}</Text>
-                            <Text style={styles.replyDate}>{new Date(reply.createdAt).toLocaleString()}</Text>
-                            <Text style={styles.replyContent}>{reply.content}</Text>
-
-                            {/* Ellipsis menu for reply */}
-                            <Menu
-                              visible={reply.showMenu}
-                              onDismiss={() => handleReplyMenuDismiss(reply._id)}
-                              anchor={
-                                <TouchableOpacity onPress={() => handleReplyMenuPress(reply._id)}>
-                                  <Icon name="ellipsis-v" size={20} color="#888" />
-                                </TouchableOpacity>
-                              }
-                            >
-                              <Menu.Item onPress={() => handleEditReply(item._id, comment._id, reply._id, reply.content)} title="Edit Reply" />
-                              <Menu.Item onPress={() => handleDeleteReply(item._id, comment._id, reply._id)} title="Delete Reply" />
-                            </Menu>
-                          </View>
-                        </View>
-                      ))}
-                      <TouchableOpacity onPress={() => toggleReplies(comment._id)}>
-                        <Text style={styles.replyButton}>{expandedReplies[comment._id] ? 'Hide Replies' : 'Show More Replies'}</Text>
-                      </TouchableOpacity>
-                    </View>
+                  {comment.replies.length > 1 && (
+                    <TouchableOpacity onPress={() => toggleReplies(comment._id)}>
+                      <Text style={styles.replyButton}>
+                        {expandedReplies[comment._id] ? 'See Less Replies' : `See More Replies (${comment.replies.length})`}
+                      </Text>
+                    </TouchableOpacity>
                   )}
+                  {(expandedReplies[comment._id] ? comment.replies : comment.replies.slice(0, 1)).map(reply => {
+                    const replyOwnerId = reply.user?._id || reply.user?.userId;
+                    return (
+                      <View key={reply._id} style={styles.reply}>
+                        {reply.user?.image && (
+                          <Image source={{ uri: reply.user.image }} style={styles.replyUserImage} />
+                        )}
+                        <View style={styles.replyTextContainer}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={styles.replyUser}>{reply.user?.name || 'Anonymous'}</Text>
+                            <View style={{ flex: 1 }} />
+                            {replyOwnerId === currentUserId && (
+                              <Menu
+                                visible={reply.showMenu}
+                                onDismiss={() => handleReplyMenuDismiss(reply._id)}
+                                anchor={
+                                  <TouchableOpacity onPress={() => handleReplyMenuPress(reply._id)}>
+                                    <Icon name="ellipsis-v" size={20} color="#888" />
+                                  </TouchableOpacity>
+                                }
+                              >
+                                <Menu.Item onPress={() => handleEditReply(item._id, comment._id, reply._id, reply.content)} title="Edit Reply" />
+                                <Menu.Item onPress={() => handleDeleteReply(item._id, comment._id, reply._id)} title="Delete Reply" />
+                              </Menu>
+                            )}
+                          </View>
+                          <Text style={styles.replyDate}>{formatDateOrTime(reply.createdAt)}</Text>
+                          <Text style={styles.replyContent}>{reply.content}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
             );
@@ -318,7 +351,6 @@ const LandingPage = ({ navigation }) => {
             <Text style={styles.replyButton}>{expandedComments[item._id] ? 'See Less Comments' : 'See More Comments'}</Text>
           </TouchableOpacity>
         )}
-
         {/* Comment Input - Modern style */}
         <View style={styles.commentInputContainerModern}>
           <TextInput
@@ -339,6 +371,7 @@ const LandingPage = ({ navigation }) => {
       </View>
     );
   };
+
 
   const handleReplyMenuPress = (replyId) => {
     const updatedForums = forums.map(forum => ({
@@ -467,26 +500,28 @@ const LandingPage = ({ navigation }) => {
       error ? <Text>{error}</Text> :
         <Provider>
           <View style={styles.container}>
-            <View style={styles.searchContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search posts..."
-                value={searchQuery}
-                onChangeText={handleSearch}
-              />
-              <TouchableOpacity
-                style={styles.searchButton}
-                onPress={() => handleSearch(searchQuery)}
-              >
-                <Icon name="search" size={20} color="#fff" />
-              </TouchableOpacity>
-            </View>
             <FlatList
               data={searchQuery ? filteredForums.filter(post => post.status === "Approved") : forums.filter(post => post.status === "Approved")}
               renderItem={renderForumItem}
               keyExtractor={(item) => item._id}
               onRefresh={triggerRefresh}
               refreshing={loading}
+              ListHeaderComponent={
+                <View style={styles.searchContainer}>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search posts..."
+                    value={searchQuery}
+                    onChangeText={handleSearch}
+                  />
+                  <TouchableOpacity
+                    style={styles.searchButton}
+                    onPress={() => handleSearch(searchQuery)}
+                  >
+                    <Icon name="search" size={20} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              }
             />
             <Modal
               visible={showReplyModal}
@@ -552,8 +587,9 @@ const styles = StyleSheet.create({
   likesCommentsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between', // Distribute space evenly
     marginTop: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20, // Add more padding for left/right
   },
   likeButton: {
     flexDirection: 'row',
@@ -562,23 +598,20 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
-  },
-  likeIcon: {
-    marginRight: 5,
-  },
-  likesText: {
-    fontSize: 14,
-    color: '#A4B465',
+    flexShrink: 1, // Prevents it from growing too much
   },
   divider: {
     width: 1,
-    height: 15,
+    height: 20,
     backgroundColor: '#ccc',
-    marginHorizontal: 60,
+    marginHorizontal: 10,
+    alignSelf: 'center',
   },
   commentCountText: {
     fontSize: 14,
     color: '#666',
+    flexShrink: 1, // Prevents it from growing too much
+    textAlign: 'right',
   },
   container: {
     flex: 1,
@@ -795,6 +828,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     height: 40,
+    borderColor: '#A4B465',
+    borderWidth: 2,
   },
   searchButton: {
     backgroundColor: '#A4B465',

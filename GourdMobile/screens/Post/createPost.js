@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList,Alert  } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, Alert, TextInput } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import EasyButton from "../../Shared/StyledComponents/EasyButton";
-import FormContainer from "../../Shared/Form/FormContainer";
-import InputUser from "../../Shared/Form/InputUser";
-import HeaderReg from "../../Shared/HeaderReg";
 import Error from "../../Shared/Error";
 import axios from "axios";
 import baseURL from "../../assets/common/baseurl";
@@ -13,7 +10,7 @@ import * as ImagePicker from "expo-image-picker";
 import mime from "mime";
 import DropDownPicker from 'react-native-dropdown-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { MaterialIcons } from '@expo/vector-icons';
 
 const CreatePost = () => {
   const [title, setTitle] = useState('');
@@ -109,23 +106,16 @@ const CreatePost = () => {
 
       const res = await axios.post(`${baseURL}posts`, formData, config);
       if (res.status === 201) {
-        // Toast.show({
-        //   topOffset: 60,
-        //   type: "success",
-        //   text1: "Post Created Successfully",
-        //   text2: "Your post has been submitted.",
-        // });
         Alert.alert(
           "Submitting Post",
           "Your post is being submitted. Wait for the approval of the admin.",
           [{ text: "OK" }]
         );
 
-        // Clear the input fields
         setTitle('');
         setContent('');
         setSelectedCategory(null);
-        setImages([]); // Clear images
+        setImages([]);
         setTimeout(() => {
           navigation.navigate("Home");
         }, 500);
@@ -143,30 +133,42 @@ const CreatePost = () => {
     }
   };
 
+  // Render the form as a FlatList (solution 3)
   return (
     <FlatList
       data={[{}]}
-      keyExtractor={(item, index) => index.toString()}
+      keyExtractor={(_, idx) => idx.toString()}
       renderItem={() => (
-        <View style={styles.container}>
-          <HeaderReg />
-          <FormContainer>
-            <InputUser
-              placeholder={"Title"}
-              name={"title"}
-              id={"title"}
-              onChangeText={setTitle}
-              value={title}
-            />
-            <InputUser
-              placeholder={"Content"}
-              name={"content"}
-              id={"content"}
-              multiline
-              numberOfLines={4}
-              onChangeText={setContent}
-              value={content}
-            />
+        <View style={styles.screenWrapper}>
+          <View style={styles.createPostCard}>
+            {/* Title as a single-line styled TextInput */}
+            <Text style={styles.label}>Title</Text>
+            <View style={styles.pseudoRichBoxTitle}>
+              <TextInput
+                placeholder="Enter the title"
+                value={title}
+                onChangeText={setTitle}
+                style={styles.richInputTitle}
+                maxLength={100}
+                numberOfLines={1}
+                textAlignVertical="center"
+                multiline={false}
+                returnKeyType="done"
+              />
+            </View>
+            {/* "Rich" text box for content (multi-line) */}
+            <Text style={styles.label}>Content</Text>
+            <View style={styles.pseudoRichBox}>
+              <TextInput
+                placeholder="Write your content here..."
+                multiline
+                numberOfLines={8}
+                onChangeText={setContent}
+                value={content}
+                style={styles.richInput}
+                textAlignVertical="top"
+              />
+            </View>
             <DropDownPicker
               open={open}
               value={selectedCategory}
@@ -178,66 +180,154 @@ const CreatePost = () => {
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownContainer}
             />
-            <TouchableOpacity style={styles.imageContainer} onPress={pickImages}>
-              {images.length > 0 ? (
-                images.map((uri, index) => (
-                  <Image key={index} style={styles.image} source={{ uri }} />
-                ))
-              ) : (
-                <Text>Select Images</Text>
-              )}
+            <TouchableOpacity style={styles.imagePickerButton} onPress={pickImages}>
+              <MaterialIcons name="add-photo-alternate" size={24} color="#A4B465" />
+              <Text style={styles.imagePickerText}>
+                {images.length > 0 ? "Change Images" : "Select Images"}
+              </Text>
             </TouchableOpacity>
+            {images.length > 0 && (
+              <View style={styles.selectedImagesRow}>
+                {images.map((uri, index) => (
+                  <Image key={index} style={styles.selectedImage} source={{ uri }} />
+                ))}
+              </View>
+            )}
 
             {error ? <Error message={error} /> : null}
 
-            <EasyButton
-              login
-              primary
+            <TouchableOpacity
+              style={styles.createButton}
               onPress={createPost}
-              style={styles.loginButton}
             >
-              <Text style={{ color: "white", fontWeight: "bold", letterSpacing: 1 }}>Create Post</Text>
-            </EasyButton>
-          </FormContainer>
+              <Text style={styles.createButtonText}>Create Post</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
-      contentContainerStyle={{ flexGrow: 1 }}
+      contentContainerStyle={styles.flatListContent}
       showsVerticalScrollIndicator={false}
     />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  flatListContent: {
+    flexGrow: 1,
+    backgroundColor: "#fff",
+    minHeight: '100%',
+  },
+  screenWrapper: {
     flex: 1,
     backgroundColor: "#E0F8E6",
+    minHeight: '100%',
   },
-
-  imageContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    borderStyle: "solid",
-    borderWidth: 2,
-    borderColor: "#1f6f78",
-    marginTop: 20,
-    alignSelf: 'center',
-    position: 'relative',
+  createPostCard: {
+    flex: 1,
+    backgroundColor: "#fff",
+    padding: 22,
+    justifyContent: 'flex-start',
   },
-  image: {
-    width: 100,
-    height: 100,
+  label: {
+    marginBottom: 8,
+    marginTop: 2,
+    fontWeight: '600',
+    color: '#A4B465',
+    fontSize: 16,
+  },
+  pseudoRichBoxTitle: {
+    backgroundColor: "#F6F6F6",
     borderRadius: 8,
-    margin: 5,
+    borderWidth: 1,
+    borderColor: "#e7e7e7",
+    minHeight: 46,
+    marginBottom: 18,
+    padding: 6,
+    justifyContent: 'center',
   },
-  loginButton: {
-    backgroundColor: "#1f6f78",
+  richInputTitle: {
+    fontSize: 16,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    color: "#222",
+    paddingVertical: 0,
+    paddingHorizontal: 2,
+    minHeight: 32,
+    maxHeight: 38,
+  },
+  pseudoRichBox: {
+    backgroundColor: "#F6F6F6",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e7e7e7",
+    minHeight: 120,
+    marginBottom: 18,
+    padding: 6,
+  },
+  richInput: {
+    minHeight: 110,
+    fontSize: 16,
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    textAlignVertical: 'top',
+    color: "#222",
   },
   dropdown: {
     marginBottom: 15,
+    borderRadius: 8,
+    backgroundColor: "#F6F6F6",
+    borderColor: '#A4B465',
+    minHeight: 45,
   },
   dropdownContainer: {
-    borderColor: '#ccc',
+    borderColor: '#A4B465',
+    backgroundColor: "#FAFAFA",
+    borderRadius: 8,
+  },
+  imagePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#A4B465',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: "#f2fbf6",
+    marginBottom: 14,
+    alignSelf: 'flex-start',
+  },
+  imagePickerText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#A4B465",
+    fontWeight: "600",
+  },
+  selectedImagesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 16,
+    marginTop: 4,
+  },
+  selectedImage: {
+    width: 75,
+    height: 75,
+    borderRadius: 8,
+    marginRight: 8,
+    marginTop: 8,
+    backgroundColor: "#A4B465"
+  },
+  createButton: {
+    backgroundColor: "#A4B465",
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  createButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 17,
+    letterSpacing: 1.2,
   },
 });
 

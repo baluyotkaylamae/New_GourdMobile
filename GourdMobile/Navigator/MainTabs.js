@@ -72,13 +72,13 @@ const MainTabs = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: "#73946B",
+    backgroundColor: "#A4B465",
     borderTopWidth: 0,
     elevation: 5,
     height: 75,
     paddingBottom: 10,
-    borderTopEndRadius: 20,
-    borderTopStartRadius: 20,
+    borderTopEndRadius: 10,
+    borderTopStartRadius: 10,
   },
 });
 
