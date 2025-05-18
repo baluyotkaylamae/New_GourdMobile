@@ -5,7 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import baseURL from '../../assets/common/baseurl';
 import AuthGlobal from '../../Context/Store/AuthGlobal';
-import { logoutUser } from "../../Context/Actions/Auth.actions"; // Ensure this path is correct
+import { logoutUser } from "../../Context/Actions/Auth.actions";
+import { MaterialIcons } from '@expo/vector-icons';
 
 const UserDetails = ({ route }) => {
     const context = useContext(AuthGlobal);
@@ -24,11 +25,9 @@ const UserDetails = ({ route }) => {
                         headers: { Authorization: `Bearer ${token}` },
                     });
                     setUserDetails(response.data.user || {});
-                } else {
-                    console.error('User ID or token is missing');
                 }
             } catch (error) {
-                console.error('Error fetching user details:', error.response ? error.response.data : error.message);
+                // Handle error
             } finally {
                 setLoading(false);
             }
@@ -46,7 +45,6 @@ const UserDetails = ({ route }) => {
         try {
             const token = await AsyncStorage.getItem('jwt');
             const userId = context.stateUser?.user?.userId;
-
             await axios.post(`${baseURL}users/logout`, { userId }, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -54,42 +52,78 @@ const UserDetails = ({ route }) => {
             await AsyncStorage.removeItem('jwt');
             logoutUser(context.dispatch);
             navigation.navigate('Login');
-        } catch (error) {
-            console.error('Logout error:', error.response ? error.response.data : error.message);
-        }
+        } catch (error) {}
     };
 
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#007BFF" />
+                <ActivityIndicator size="large" color="#207868" />
             </View>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Image
-                source={{ uri: userDetails?.image || 'https://via.placeholder.com/120' }}
-                style={styles.profileImage}
-            />
-            <Text style={styles.userName}>{userDetails?.name || 'Anonymous User'}</Text>
-            <View style={styles.infoCard}>
-                <Text style={styles.infoText}>Email: {userDetails?.email || 'N/A'}</Text>
-                <Text style={styles.infoText}>Phone: {userDetails?.phone || 'N/A'}</Text>
-                <Text style={styles.infoText}>Street: {userDetails?.street || 'N/A'}</Text>
-                <Text style={styles.infoText}>Apartment: {userDetails?.apartment || 'N/A'}</Text>
-                <Text style={styles.infoText}>Zip: {userDetails?.zip || 'N/A'}</Text>
-                <Text style={styles.infoText}>City: {userDetails?.city || 'N/A'}</Text>
-                <Text style={styles.infoText}>Country: {userDetails?.country || 'N/A'}</Text>
+        <ScrollView contentContainerStyle={styles.outer}>
+            <View style={styles.profileCard}>
+                <View style={styles.avatarSection}>
+                    <Image
+                        source={{ uri: userDetails?.image || 'https://via.placeholder.com/120' }}
+                        style={styles.profileImage}
+                    />
+                    <TouchableOpacity
+                        style={styles.editAvatar}
+                        onPress={() => navigation.navigate('UpdateProfile', { userDetails })}
+                    >
+                        <MaterialIcons name="edit" size={22} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+                <Text style={styles.userName}>{userDetails?.name || 'Anonymous User'}</Text>
+                <Text style={styles.userEmail}>{userDetails?.email || 'No Email'}</Text>
             </View>
+
+            <View style={styles.infoCard}>
+                <View style={styles.infoRow}>
+                    <MaterialIcons name="phone" size={20} color="#A4B465" />
+                    <Text style={styles.infoLabel}>Phone:</Text>
+                    <Text style={styles.infoValue}>{userDetails?.phone || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                    <MaterialIcons name="home" size={20} color="#A4B465" />
+                    <Text style={styles.infoLabel}>Street:</Text>
+                    <Text style={styles.infoValue}>{userDetails?.street || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                    <MaterialIcons name="location-city" size={20} color="#A4B465" />
+                    <Text style={styles.infoLabel}>Apartment:</Text>
+                    <Text style={styles.infoValue}>{userDetails?.apartment || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                    <MaterialIcons name="markunread-mailbox" size={20} color="#A4B465" />
+                    <Text style={styles.infoLabel}>Zip:</Text>
+                    <Text style={styles.infoValue}>{userDetails?.zip || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                    <MaterialIcons name="location-city" size={20} color="#A4B465" />
+                    <Text style={styles.infoLabel}>City:</Text>
+                    <Text style={styles.infoValue}>{userDetails?.city || 'N/A'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                    <MaterialIcons name="flag" size={20} color="#A4B465" />
+                    <Text style={styles.infoLabel}>Country:</Text>
+                    <Text style={styles.infoValue}>{userDetails?.country || 'N/A'}</Text>
+                </View>
+            </View>
+
             <TouchableOpacity
-                style={styles.button}
+                style={styles.editButton}
                 onPress={() => navigation.navigate('UpdateProfile', { userDetails })}
             >
+                <MaterialIcons name="edit" size={20} color="#fff" style={{ marginRight: 7 }} />
                 <Text style={styles.buttonText}>Edit Profile</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
+            <TouchableOpacity style={[styles.editButton, styles.logoutButton]} onPress={handleLogout}>
+                <MaterialIcons name="logout" size={20} color="#fff" style={{ marginRight: 7 }} />
                 <Text style={styles.buttonText}>Logout</Text>
             </TouchableOpacity>
         </ScrollView>
@@ -97,61 +131,120 @@ const UserDetails = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
+    outer: {
         flexGrow: 1,
         alignItems: 'center',
         backgroundColor: '#F5F5F5',
-        paddingVertical: 20,
+        paddingVertical: 24,
+        paddingHorizontal: 0,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: "#F5F5F5"
+    },
+    profileCard: {
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 14,
+        paddingVertical: 24,
+        paddingHorizontal: 32,
+        marginBottom: 18,
+        width: '92%',
+        elevation: 4,
+        shadowColor: '#1f6f78',
+        shadowOpacity: 0.09,
+        shadowOffset: { width: 0, height: 2 },
+    },
+    avatarSection: {
+        position: "relative",
+        alignItems: "center",
+        justifyContent: "center",
     },
     profileImage: {
         width: 120,
         height: 120,
         borderRadius: 60,
         marginBottom: 15,
+        borderWidth: 2.5,
+        borderColor: "#A4B465",
+        backgroundColor: "#e0f6eb",
+    },
+    editAvatar: {
+        position: "absolute",
+        bottom: 6,
+        right: 12,
+        backgroundColor: "#A4B465",
+        borderRadius: 16,
+        padding: 5,
+        elevation: 3,
     },
     userName: {
-        fontSize: 24,
+        fontSize: 23,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#9EBC8A',
+        marginBottom: 2,
+        letterSpacing: 1,
+    },
+    userEmail: {
+        fontSize: 15,
+        color: '#888',
         marginBottom: 10,
+        fontWeight: "500",
     },
     infoCard: {
-        width: '90%',
+        width: '92%',
         backgroundColor: '#fff',
-        borderRadius: 10,
-        padding: 15,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 2 },
-        marginBottom: 20,
+        borderRadius: 12,
+        paddingVertical: 15,
+        paddingHorizontal: 18,
+        elevation: 2,
+        shadowColor: '#A4B465',
+        shadowOpacity: 0.07,
+        shadowOffset: { width: 0, height: 1 },
+        marginBottom: 16,
     },
-    infoText: {
-        fontSize: 16,
-        color: '#555',
-        marginVertical: 5,
-        
+    infoRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 8,
+        gap: 7,
     },
-    button: {
-        width: '90%',
-        backgroundColor: '#007BFF',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
+    infoLabel: {
+        fontSize: 15,
+        color: "#207868",
+        fontWeight: "600",
+        marginLeft: 5,
+        minWidth: 70,
+    },
+    infoValue: {
+        fontSize: 15,
+        color: "#444",
+        fontWeight: "500",
+        marginLeft: 2,
+        flex: 1,
+    },
+    editButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        width: '92%',
+        backgroundColor: "#207868",
+        paddingVertical: 13,
+        borderRadius: 9,
+        alignSelf: "center",
+        justifyContent: "center",
         marginBottom: 10,
+        elevation: 2,
     },
     buttonText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
+        letterSpacing: 0.4,
     },
     logoutButton: {
-        backgroundColor: '#FF3B30',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        backgroundColor: '#e74c3c',
     },
 });
 

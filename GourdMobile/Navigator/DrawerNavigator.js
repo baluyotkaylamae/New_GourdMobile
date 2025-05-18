@@ -19,7 +19,7 @@ const DrawerNavigator = () => {
   const isAdmin = context.stateUser && context.stateUser.user && context.stateUser.user.isAdmin;
   const [user, setUser] = useState(context.stateUser && context.stateUser.user);
 
-  console.log("User in DrawerNavigator:", user);
+  // console.log("User in DrawerNavigator:", user);
   useEffect(() => {
     const registerForPushNotifications = async () => {
       try {
