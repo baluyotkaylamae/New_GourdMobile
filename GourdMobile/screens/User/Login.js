@@ -111,16 +111,6 @@ const Login = (props) => {
               <Text style={styles.registerButton}>Create New Account</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.socialDivider}>
-            <View style={styles.line} />
-            <Text style={styles.middleText}>or continue with</Text>
-            <View style={styles.line} />
-          </View>
-          <View style={styles.socialRow}>
-            <TouchableOpacity onPress={handleGoogleSignIn} style={styles.googleButtonContainer}>
-              <Image source={googleLogo} style={styles.googleIcon} />
-            </TouchableOpacity>
-          </View>
         </View>
       </FormContainer>
     </KeyboardAvoidingView>
@@ -170,17 +160,17 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#1f6f78",
+    color: "#A4B465",
     marginBottom: 12,
     letterSpacing: 0.5,
     alignSelf: "flex-start",
   },
   input: {
     marginBottom: 15,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: "#A4B465",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#e7e7e7",
+    borderColor: "#A4B465",
     paddingHorizontal: 12,
     fontSize: 16,
     width: "100%",
@@ -191,7 +181,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   loginButton: {
-    backgroundColor: "#3baea0",
+    backgroundColor: "#A4B465",
     borderRadius: 10,
     paddingVertical: 13,
     width: "100%",
@@ -216,7 +206,7 @@ const styles = StyleSheet.create({
     marginRight: 5,
   },
   registerButton: {
-    color: "#3baea0",
+    color: "#A4B465",
     fontWeight: "bold",
     fontSize: 15.5,
     textDecorationLine: "underline",
@@ -230,7 +220,7 @@ const styles = StyleSheet.create({
   line: {
     flex: 1,
     height: 1.1,
-    backgroundColor: "#e0e0e0",
+    backgroundColor: "#A4B465",
     marginHorizontal: 6,
     borderRadius: 2,
   },
