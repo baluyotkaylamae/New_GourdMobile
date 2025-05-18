@@ -129,7 +129,7 @@ router.post('/register', upload.single('image'), async (req, res) => {
         });
 
         await user.save();
-        res.status(200).json({ message: 'User registered successfully!', user });
+        res.status(201).json({ message: 'User registered successfully!', user });
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
