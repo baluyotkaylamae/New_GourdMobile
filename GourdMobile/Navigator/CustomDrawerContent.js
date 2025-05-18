@@ -66,23 +66,26 @@ const CustomDrawerContent = (props) => {
   }
 
   return (
-    <DrawerContentScrollView {...props}>
-       <TouchableOpacity 
-        onPress={() => navigation.navigate('Home', { screen: 'Home' })}
-      >
-        <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>Gourdtify</Text>
+    <View style={{flex: 1}}>
+      <DrawerContentScrollView {...props} contentContainerStyle={{paddingBottom: 0}}>
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('Home', { screen: 'Home' })}
+        >
+          <View style={styles.headerContainer}>
+            <Text style={styles.headerText}>Gourdtify</Text>
+          </View>
+        </TouchableOpacity>
+        <View style={styles.userInfoContainer}>
+          <Image source={{ uri: userDetails?.image || 'https://via.placeholder.com/50' }} style={styles.userImage} />
+          <Text style={styles.userName}>{userDetails?.name || 'Guest'}</Text>
         </View>
-      </TouchableOpacity>
-      <View style={styles.userInfoContainer}>
-        <Image source={{ uri: userDetails?.image || 'https://via.placeholder.com/50' }} style={styles.userImage} />
-        <Text style={styles.userName}>{userDetails?.name || 'Guest'}</Text>
-      </View>
-      <DrawerItemList {...props} />
+        <View style={styles.divider} />
+        <DrawerItemList {...props} />
+      </DrawerContentScrollView>
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
-    </DrawerContentScrollView>
+    </View>
   );
 };
 
@@ -113,13 +116,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  divider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginHorizontal: 20,
+    marginVertical: 10,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoutButton: {
-    marginTop: 20,
+    marginBottom: 24,
+    marginTop: 12,
     padding: 10,
     backgroundColor: '#FF3B30',
     borderRadius: 5,

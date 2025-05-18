@@ -9,6 +9,7 @@ import { jwtDecode } from "jwt-decode";
 import UpdateComment from '../screens/Post/UpdateComment';
 import UpdateReply from '../screens/Post/UpdateReplies';
 import UpdatePost from '../screens/Post/editPost'; // Adjust the path if needed
+import Register from '../screens/User/Register'; // Adjust the path if needed
 
 const Stack = createNativeStackNavigator();
 
@@ -67,15 +68,22 @@ const Main = () => {
                         component={UpdateReply}
                         options={{ title: "Update Reply" }}
                     />
-                        <Stack.Screen name="UpdatePost" component={UpdatePost} />
+                    <Stack.Screen name="UpdatePost" component={UpdatePost} />
 
                 </>
             ) : (
-                <Stack.Screen
-                    name="Login"
-                    component={LoginScreen}
-                    options={{ headerShown: false }}
-                />
+                <>
+                    <Stack.Screen
+                        name="Login"
+                        component={LoginScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="Register"
+                        component={Register}
+                        options={{ title: "Register" }}
+                    />
+                </>
             )}
         </Stack.Navigator>
     );
