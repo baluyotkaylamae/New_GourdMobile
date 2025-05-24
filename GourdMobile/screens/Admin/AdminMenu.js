@@ -72,21 +72,21 @@ const styles = StyleSheet.create({
 
 // !!! BUTTONS array must be after styles so styles.icon is defined !!!
 const BUTTONS = [
-  {
-    label: "Categories",
-    iconComponent: <MaterialIcons name="category" size={24} color="#207868" style={styles.icon} />,
-    nav: "Categories",
-  },
-  {
-    label: "Gourd Types",
-    iconComponent: <FontAwesome5 name="leaf" size={22} color="#207868" style={styles.icon} />,
-    nav: "GourdType",
-  },
-  {
-    label: "Gourd Varieties",
-    iconComponent: <FontAwesome5 name="seedling" size={22} color="#207868" style={styles.icon} />,
-    nav: "GourdVarieties",
-  },
+  // {
+  //   label: "Categories",
+  //   iconComponent: <MaterialIcons name="category" size={24} color="#207868" style={styles.icon} />,
+  //   nav: "Categories",
+  // },
+  // {
+  //   label: "Gourd Types",
+  //   iconComponent: <FontAwesome5 name="leaf" size={22} color="#207868" style={styles.icon} />,
+  //   nav: "GourdType",
+  // },
+  // {
+  //   label: "Gourd Varieties",
+  //   iconComponent: <FontAwesome5 name="seedling" size={22} color="#207868" style={styles.icon} />,
+  //   nav: "GourdVarieties",
+  // },
   {
     label: "Users",
     iconComponent: <Ionicons name="people" size={24} color="#207868" style={styles.icon} />,

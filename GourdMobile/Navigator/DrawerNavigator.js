@@ -13,6 +13,7 @@ import Dashboard from '../screens/User/DashboardScreen';
 const Drawer = createDrawerNavigator();
 import { registerForPushNotificationsAsync } from '../utils/Notification';
 import baseURL from '../assets/common/baseurl';
+import UserMonitoringSummary from '../screens/UserMonitoringSummary';
 
 const DrawerNavigator = () => {
   const context = useContext(AuthGlobal);
@@ -79,6 +80,16 @@ const DrawerNavigator = () => {
           headerTitle: 'MyDashboard',
           drawerIcon: ({ color, size }) => (
             <Ionicons name="bar-chart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Monitoring Summary"
+        component={UserMonitoringSummary}
+        options={{
+          headerTitle: 'Monitoring Summary',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="stats-chart-outline" size={size} color={color} />
           ),
         }}
       />

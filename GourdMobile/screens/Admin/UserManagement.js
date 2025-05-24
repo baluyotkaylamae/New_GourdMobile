@@ -1,110 +1,137 @@
-import React, { useState, useEffect } from 'react';
-import baseURL from "../../assets/common/baseurl";
-import { View, Text, Button, StyleSheet, Alert, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Modal, StyleSheet, ActivityIndicator, Pressable, Animated } from 'react-native';
+import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import baseURL from "../../assets/common/baseurl";
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const UserManagement = ({ navigation }) => {
-  const [users, setUsers] = useState([]);
+const Toast = ({ visible, type, message, onHide }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const storedToken = await AsyncStorage.getItem('jwt');
-      if (!storedToken) {
-        alert('You are not logged in');
-        return;
-      }
-
-      const response = await fetch(`${baseURL}users/`, {
-        headers: {
-          'Authorization': `Bearer ${storedToken}`,
-        }
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setUsers(data);
-      } else {
-        alert('Failed to fetch users');
-      }
-    } catch (error) {
-      alert('Error fetching users');
+    if (visible) {
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      const timer = setTimeout(() => {
+        Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => onHide());
+      }, 2300);
+      return () => clearTimeout(timer);
     }
+  }, [visible]);
+
+  if (!visible) return null;
+  return (
+    <Animated.View style={[
+      styles.toast,
+      type === "success" ? styles.toastSuccess : styles.toastError,
+      { opacity: fadeAnim }
+    ]}>
+      <Icon
+        name={type === "success" ? "check-circle" : "error"}
+        size={18}
+        color="#fff"
+        style={{ marginRight: 8 }}
+      />
+      <Text style={styles.toastText}>{message}</Text>
+    </Animated.View>
+  );
+};
+
+const AdminUserManagement = () => {
+  const [users, setUsers] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const [showToast, setShowToast] = useState(false);
+  const [toastType, setToastType] = useState("success");
+  const [toastMsg, setToastMsg] = useState("");
+
+  const [deleteId, setDeleteId] = useState(null);
+
+  const showToastify = (type, message) => {
+    setToastType(type);
+    setToastMsg(message);
+    setShowToast(true);
   };
 
-  const handleDeleteUser = async (userId) => {
-    const storedToken = await AsyncStorage.getItem('jwt');
-    if (!storedToken) {
-      alert('You are not logged in');
-      return;
-    }
-
-    try {
-      const response = await fetch(`${baseURL}users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${storedToken}`,
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      // Get current user id from AsyncStorage
+      let id = null;
+      try {
+        const userJson = await AsyncStorage.getItem('user');
+        if (userJson) {
+          const userObj = JSON.parse(userJson);
+          id = userObj._id || userObj.id;
         }
-      });
+      } catch (err) {}
+      setCurrentUserId(id);
 
-      if (response.ok) {
-        Alert.alert('Success', 'User deleted successfully', [
-          { text: 'OK', onPress: () => fetchUsers() }
-        ]);
-      } else {
-        alert('Failed to delete user');
+      try {
+        const storedToken = await AsyncStorage.getItem('jwt');
+        const response = await axios.get(`${baseURL}users/`, {
+          headers: { Authorization: `Bearer ${storedToken}` }
+        });
+        setUsers(response.data);
+      } catch (error) {
+        showToastify("error", "Error fetching users");
       }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const handleDeleteUser = (userId) => {
+    setDeleteId(userId);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem('jwt');
+      await axios.delete(`${baseURL}users/${deleteId}`, {
+        headers: { Authorization: `Bearer ${storedToken}` }
+      });
+      setUsers(users => users.filter(u => u._id !== deleteId));
+      showToastify("success", "User deleted!");
     } catch (error) {
-      alert('Error deleting user');
+      showToastify("error", "Error deleting user");
     }
+    setDeleteId(null);
   };
 
   const handleToggleAdmin = async (userId, isAdmin) => {
-    const storedToken = await AsyncStorage.getItem('jwt');
-    if (!storedToken) {
-      alert('You are not logged in');
-      return;
-    }
-  
     try {
-      const response = await fetch(`${baseURL}users/${userId}/role`, {
-        method: 'PATCH',
+      const storedToken = await AsyncStorage.getItem('jwt');
+      await axios.patch(`${baseURL}users/${userId}/role`, {
+        isAdmin: !isAdmin
+      }, {
         headers: {
-          'Authorization': `Bearer ${storedToken}`,
+          Authorization: `Bearer ${storedToken}`,
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isAdmin: !isAdmin }), // Toggling the admin status
+        }
       });
-  
-      if (response.ok) {
-        Alert.alert('Success', 'User admin status updated', [
-          { text: 'OK', onPress: () => fetchUsers() }
-        ]);
-      } else {
-        alert('Failed to update admin status');
-      }
+      setUsers(users => users.map(u => u._id === userId ? { ...u, isAdmin: !isAdmin } : u));
+      showToastify("success", "User admin status updated!");
     } catch (error) {
-      alert('Error updating admin status');
+      showToastify("error", "Error updating admin status");
     }
   };
-  
+
+  const shownUsers = currentUserId ? users.filter(u => u._id !== currentUserId) : users;
 
   const renderUserItem = ({ item }) => (
     <View style={styles.userItem}>
       <Text style={styles.userName}>{item.name}</Text>
       <Text style={styles.userEmail}>{item.email}</Text>
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.button, item.isAdmin ? styles.revokeButton : styles.makeAdminButton]}
           onPress={() => handleToggleAdmin(item._id, item.isAdmin)}
         >
           <Text style={styles.buttonText}>{item.isAdmin ? 'Revoke Admin' : 'Make Admin'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.button, styles.deleteButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.deleteButton]}
           onPress={() => handleDeleteUser(item._id)}
         >
           <Text style={styles.buttonText}>Delete User</Text>
@@ -114,14 +141,57 @@ const UserManagement = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>User Management</Text>
-      <FlatList
-        data={users}
-        keyExtractor={(item) => item._id}
-        renderItem={renderUserItem}
+    <>
+      <Toast
+        visible={showToast}
+        type={toastType}
+        message={toastMsg}
+        onHide={() => setShowToast(false)}
       />
-    </View>
+      {loading ? <ActivityIndicator size="large" color="#FF6347" style={styles.loadingIndicator} /> :
+      <View style={styles.container}>
+        <Text style={styles.header}>User Management</Text>
+        <FlatList
+          data={shownUsers}
+          keyExtractor={(item) => item._id}
+          renderItem={renderUserItem}
+          contentContainerStyle={{ paddingBottom: 30 }}
+          ListEmptyComponent={
+            <Text style={{ textAlign: 'center', color: '#888', marginTop: 32 }}>No users found.</Text>
+          }
+        />
+        {/* Delete Confirmation Modal */}
+        <Modal
+          visible={!!deleteId}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setDeleteId(null)}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setDeleteId(null)}>
+            <Pressable style={styles.deleteModalContainer}>
+              <Icon name="delete-forever" size={36} color="#FF6347" style={{ alignSelf: "center", marginBottom: 12 }} />
+              <Text style={styles.deleteModalTitle}>Delete User</Text>
+              <Text style={styles.deleteModalText}>Are you sure you want to delete this user?</Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelModalButton]}
+                  onPress={() => setDeleteId(null)}
+                >
+                  <Text style={[styles.modalButtonText, { color: '#FF6347' }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.confirmModalButton]}
+                  onPress={confirmDelete}
+                >
+                  <Text style={styles.modalButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      </View>
+      }
+    </>
   );
 };
 
@@ -129,42 +199,46 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#E0F8E6',
+    backgroundColor: '#F2F2F2',
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
     color: '#333',
+    textAlign: 'center',
   },
   userItem: {
     backgroundColor: '#fff',
-    padding: 15,
-    marginBottom: 15,
-    borderRadius: 8,
+    padding: 18,
+    marginBottom: 16,
+    borderRadius: 10,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   userName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#222',
+    marginBottom: 2,
   },
   userEmail: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 15,
+    marginBottom: 13,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 8,
   },
   button: {
     paddingVertical: 10,
     paddingHorizontal: 15,
-    borderRadius: 5,
+    borderRadius: 6,
     width: '48%',
     alignItems: 'center',
   },
@@ -182,6 +256,99 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(20, 40, 40, 0.42)',
+  },
+  deleteModalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    padding: 24,
+    borderRadius: 14,
+    elevation: 15,
+    shadowColor: "#c12a2a",
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.23,
+    shadowRadius: 18,
+    alignItems: "center"
+  },
+  deleteModalTitle: {
+    fontSize: 19,
+    fontWeight: "bold",
+    color: "#ff6347",
+    marginBottom: 6,
+    textAlign: "center"
+  },
+  deleteModalText: {
+    fontSize: 16,
+    color: "#444",
+    textAlign: "center",
+    marginBottom: 20
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 28,
+    gap: 14,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 2,
+    backgroundColor: '#eee',
+  },
+  cancelModalButton: {
+    backgroundColor: '#f7f7f7',
+    borderWidth: 1,
+    borderColor: '#FF6347',
+  },
+  confirmModalButton: {
+    backgroundColor: '#ff6347',
+  },
+  modalButtonText: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#fff',
+  },
+  toast: {
+    position: 'absolute',
+    top: 36,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    backgroundColor: '#222',
+    borderRadius: 10,
+    paddingHorizontal: 26,
+    paddingVertical: 13,
+    alignItems: 'center',
+    zIndex: 1000,
+    elevation: 999,
+    shadowColor: "#222",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+  },
+  toastSuccess: {
+    backgroundColor: "#28A745",
+  },
+  toastError: {
+    backgroundColor: "#FF6347",
+  },
+  toastText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+  loadingIndicator: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginLeft: -30,
+    marginTop: -30,
+  },
 });
 
-export default UserManagement;
+export default AdminUserManagement;

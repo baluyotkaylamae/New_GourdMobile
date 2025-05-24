@@ -6,7 +6,7 @@ import {jwtDecode} from "jwt-decode";
 
 const Auth = (props) => {
   const [stateUser, dispatch] = useReducer(authReducer, {
-    isAuthenticated: null,
+    isAuthenticated: false,
     user: {},
   });
 
