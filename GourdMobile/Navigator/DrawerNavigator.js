@@ -84,10 +84,10 @@ const DrawerNavigator = () => {
         }}
       />
       <Drawer.Screen
-        name="Monitoring Summary"
+        name="Summary"
         component={UserMonitoringSummary}
         options={{
-          headerTitle: 'Monitoring Summary',
+          headerTitle: 'Summary',
           drawerIcon: ({ color, size }) => (
             <Ionicons name="stats-chart-outline" size={size} color={color} />
           ),
