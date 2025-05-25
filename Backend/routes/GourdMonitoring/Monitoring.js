@@ -236,53 +236,77 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-async function checkFinalizationAndNotify() {
+async function checkHarvestNotifications() {
     try {
-        const today = new Date(); // Get today's date
-        const startOfDay = new Date(today.setHours(0, 0, 0, 0)); // Start of the day
-        const endOfDay = new Date(today.setHours(23, 59, 59, 999)); // End of the day
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        console.log('Querying monitorings with dateOfFinalization between:', startOfDay, 'and', endOfDay);
-
+        // Find all monitorings where at least one harvest day is today and notificationStatus is false
         const monitorings = await Monitoring.find({
-            dateOfFinalization: { $gte: startOfDay, $lte: endOfDay },
+            "dateOfHarvest": {
+                $elemMatch: {
+                    date: { $gte: today, $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000) },
+                    notificationStatus: false
+                }
+            }
         }).populate('userID').populate('gourdType');
 
-        console.log('Raw monitorings:', monitorings);
-
-        if (monitorings.length === 0) {
-            console.log('No monitorings found for today.');
-            return;
-        }
-
-        console.log(`Found ${monitorings.length} monitoring(s) with today's dateOfFinalization.`);
-
         for (const monitoring of monitorings) {
+            const dayIndex = monitoring.dateOfHarvest.findIndex(
+                d => d.date && new Date(d.date).setHours(0, 0, 0, 0) === today.getTime() && !d.notificationStatus
+            );
+            if (dayIndex === -1) continue;
+
             const user = monitoring.userID;
-            if (user && user.pushToken) {
-                console.log(`Sending notification to user: ${user.name} (Push Token: ${user.pushToken})`);
+            if (!user || !user.pushToken) continue;
 
-                const data = {
-                    title: "START YOUR HARVEST!",
-                    message: `Gourd: ${monitoring.gourdType.name}\nPollinated: ${monitoring.pollinatedFlowers}\nHarvest: ${monitoring.fruitsHarvested || 0}\nPlot: ${monitoring.plotNo || 'N/A'}`,
-                    data: { monitoringId: monitoring._id },
-                };
-
-                const result = await pushNotification(data, user.pushToken); // Send notification to the user's push token
-                console.log(`Notification sent successfully for user: ${user.name}`, result);
+            // Prepare message for each day
+            let dayMessage = "";
+            if (dayIndex === 0) {
+                dayMessage = "Harvest starts today!\n7 days of harvesting ahead.";
+            } else if (dayIndex === 6) {
+                dayMessage = "Last day to harvest!";
             } else {
-                console.log(`User ${user ? user.name : 'unknown'} does not have a valid push token.`);
+                dayMessage = `${7 - dayIndex} days left to complete harvest.`;
             }
+
+            // Gather harvest info
+            const expectedHarvest = Array.isArray(monitoring.pollinatedFlowerImages) ? monitoring.pollinatedFlowerImages.length : 0;
+            const actualHarvest = Array.isArray(monitoring.fruitHarvestedImages) ? monitoring.fruitHarvestedImages.length : 0;
+            const pollinationDate = monitoring.dateOfPollination
+                ? new Date(monitoring.dateOfPollination).toLocaleDateString()
+                : 'N/A';
+
+            const message =
+                `${dayMessage}\n` +
+                `Date of Pollination: ${pollinationDate}\n` +
+                `Gourd: ${monitoring.gourdType.name}\n` +
+                `Plot: ${monitoring.plotNo || 'N/A'}\n` +
+                `Expected Harvest: ${expectedHarvest}\n` +
+                `Actual Harvest: ${actualHarvest}\n`;
+
+            const data = {
+                title: "HARVEST REMINDER",
+                message,
+                data: { monitoringId: monitoring._id },
+            };
+
+            // Send notification
+            await pushNotification(data, user.pushToken);
+
+            // Update notificationStatus for this day
+            monitoring.dateOfHarvest[dayIndex].notificationStatus = true;
+            await monitoring.save();
         }
     } catch (error) {
-        console.error('Error checking finalization and notifying users:', error);
+        console.error('Error checking harvest notifications:', error);
     }
 }
 
 // Schedule the function to run daily
-cron.schedule('0 5 * * *', () => {
-    console.log('Running daily finalization notification check at 5:00 AM...');
-    checkFinalizationAndNotify();
+cron.schedule("*/2 * * * *", () => {
+    console.log('Running daily harvest notification check at 5:00 AM...');
+    checkHarvestNotifications();
 });
 
 module.exports = router;
