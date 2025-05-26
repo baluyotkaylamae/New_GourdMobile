@@ -191,7 +191,7 @@ const PastMonitoring = () => {
       const response = await axios.get(`${baseURL}Monitoring`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
-      console.log("Fetched monitoring data:", response.data);
+      // console.log("Fetched monitoring data:", response.data);
 
       const today = new Date();
       const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
