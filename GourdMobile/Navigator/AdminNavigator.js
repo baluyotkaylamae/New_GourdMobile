@@ -8,6 +8,8 @@ import GourdVariety from "../screens/Admin/Monitoring/CreateGourdVariety";
 import Dashboard from "../screens/Admin/Dashboard";
 import Users from "../screens/Admin/UserManagement";
 import PostManager from "../screens/Admin/PostManagements";
+import ArchivedPost from "../screens/Admin/ArchivePosts";
+import ArchiveUser from "../screens/Admin/UserArchive"; // Ensure this path is correct
 
 const Stack = createStackNavigator();
 
@@ -28,6 +30,8 @@ const AdminNavigator = () => {
             <Stack.Screen name="Users" component={Users} />
             <Stack.Screen name="Dashboard" component={Dashboard} />
             <Stack.Screen name="PostManagement" component={PostManager} />
+            <Stack.Screen name="ArchivePost" component={ArchivedPost} />
+            <Stack.Screen name="ArchiveUser" component={ArchiveUser} />
         </Stack.Navigator>
     );
 };

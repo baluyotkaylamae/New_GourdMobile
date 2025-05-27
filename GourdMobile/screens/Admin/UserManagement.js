@@ -35,14 +35,60 @@ const UserManagement = ({ navigation }) => {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
+  // const handleDeleteUser = async (userId) => {
+  //   const storedToken = await AsyncStorage.getItem('jwt');
+  //   if (!storedToken) {
+  //     alert('You are not logged in');
+  //     return;
+  //   }
+
+  //   try {
+  //     const response = await fetch(`${baseURL}users/${userId}`, {
+  //       method: 'DELETE',
+  //       headers: {
+  //         'Authorization': `Bearer ${storedToken}`,
+  //       }
+  //     });
+
+  //     if (response.ok) {
+  //       Alert.alert('Success', 'User deleted successfully', [
+  //         { text: 'OK', onPress: () => fetchUsers() }
+  //       ]);
+  //     } else {
+  //       alert('Failed to delete user');
+  //     }
+  //   } catch (error) {
+  //     alert('Error deleting user');
+  //   }
+  // };
+
+
+    const handleDeleteUser = async (userId) => {
     const storedToken = await AsyncStorage.getItem('jwt');
     if (!storedToken) {
       alert('You are not logged in');
       return;
     }
 
+    // Find the user object to archive
+    const userToArchive = users.find((user) => user._id === userId);
+    if (!userToArchive) {
+      alert('User not found');
+      return;
+    }
+
     try {
+      // 1. Archive the user
+      await fetch(`${baseURL}users/archive`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${storedToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userToArchive),
+      });
+
+      // 2. Delete the user from active users
       const response = await fetch(`${baseURL}users/${userId}`, {
         method: 'DELETE',
         headers: {
@@ -51,14 +97,14 @@ const UserManagement = ({ navigation }) => {
       });
 
       if (response.ok) {
-        Alert.alert('Success', 'User deleted successfully', [
+        Alert.alert('Success', 'User archived successfully', [
           { text: 'OK', onPress: () => fetchUsers() }
         ]);
       } else {
         alert('Failed to delete user');
       }
     } catch (error) {
-      alert('Error deleting user');
+      alert('Failed to archive or delete user');
     }
   };
 
@@ -107,7 +153,7 @@ const UserManagement = ({ navigation }) => {
           style={[styles.button, styles.deleteButton]} 
           onPress={() => handleDeleteUser(item._id)}
         >
-          <Text style={styles.buttonText}>Delete User</Text>
+          <Text style={styles.buttonText}>Archive User</Text>
         </TouchableOpacity>
       </View>
     </View>

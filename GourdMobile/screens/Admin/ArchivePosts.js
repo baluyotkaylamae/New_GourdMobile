@@ -6,18 +6,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from "../../assets/common/baseurl";
 import Swiper from 'react-native-swiper';
 
-const AdminPostManagement = () => {
+const ArchivedPost = () => {
   const [posts, setPosts] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [postStatus, setPostStatus] = useState('');
   const [loading, setLoading] = useState(true);
 
   const fetchPosts = async () => {
     setLoading(true);
     try {
       const storedToken = await AsyncStorage.getItem("jwt");
-      const response = await axios.get(`${baseURL}posts`, {
+      const response = await axios.get(`${baseURL}posts/archive`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
       setPosts(response.data);
@@ -32,30 +30,6 @@ const AdminPostManagement = () => {
     fetchPosts();
   }, []);
 
-  const handleOpenModal = (post) => {
-    setSelectedPost(post);
-    setPostStatus(post.status || 'Pending');
-    setModalVisible(true);
-  };
-
-  const handleUpdateStatus = async () => {
-    if (selectedPost && postStatus) {
-      try {
-        const storedToken = await AsyncStorage.getItem("jwt");
-        await axios.put(
-          `${baseURL}posts/status/${selectedPost._id}`,
-          { status: postStatus },
-          {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          }
-        );
-        fetchPosts();
-        setModalVisible(false);
-      } catch (error) {
-        console.error('Error updating post status:', error);
-      }
-    }
-  };
 
   // const handleDeletePost = async (postId) => {
   //   Alert.alert(
@@ -100,13 +74,13 @@ const AdminPostManagement = () => {
               const storedToken = await AsyncStorage.getItem("jwt");
               // 1. Archive the post
               await axios.post(
-                `${baseURL}posts/archive`,
+                `${baseURL}posts/`,
                 postToArchive,
                 { headers: { Authorization: `Bearer ${storedToken}` } }
               );
               // 2. Delete the post
               await axios.delete(
-                `${baseURL}posts/${postId}`,
+                `${baseURL}posts/archive/${postId}`,
                 { headers: { Authorization: `Bearer ${storedToken}` } }
               );
               fetchPosts(); // Refresh post list
@@ -137,20 +111,11 @@ const AdminPostManagement = () => {
       )}
 
       <View style={styles.buttonContainer}>
-        {item.status === 'Pending' && (
-          <TouchableOpacity
-            style={styles.updateButton}
-            onPress={() => handleOpenModal(item)}
-          >
-            <Text style={styles.updateButtonText}>Update Status</Text>
-          </TouchableOpacity>
-        )}
-
         <TouchableOpacity
-          style={styles.deleteButton}
+          style={styles.updateButton}
           onPress={() => handleDeletePost(item._id)}
         >
-          <Text style={styles.deleteButtonText}>Archive</Text>
+          <Text style={styles.deleteButtonText}>Retrive</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -160,42 +125,13 @@ const AdminPostManagement = () => {
     loading ? <ActivityIndicator size="large" color="#FF6347" style={styles.loadingIndicator} /> :
       <View style={styles.container}>
         <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#222', marginBottom: 10, alignSelf: 'center' }}>
-                  Post Management
-                </Text>
+            Archive post
+        </Text>
         <FlatList
           data={posts}
           renderItem={renderPostItem}
           keyExtractor={(item) => item._id}
         />
-        <Modal
-          visible={modalVisible}
-          transparent={true}
-          animationType="fade"
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Update Post Status</Text>
-              <Picker
-                selectedValue={postStatus}
-                onValueChange={(itemValue) => setPostStatus(itemValue)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Pending" value="Pending" />
-                <Picker.Item label="Approved" value="Approved" />
-                <Picker.Item label="Rejected" value="Rejected" />
-              </Picker>
-              <View style={styles.modalButtons}>
-                <Button title="Cancel" onPress={() => setModalVisible(false)} color="#FF6347" />
-                <Button
-                  title="Update"
-                  onPress={handleUpdateStatus}
-                  color="#28A745"
-                  disabled={postStatus === selectedPost?.status}
-                />
-              </View>
-            </View>
-          </View>
-        </Modal>
       </View>
   );
 };
@@ -269,4 +205,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AdminPostManagement;
+export default ArchivedPost;

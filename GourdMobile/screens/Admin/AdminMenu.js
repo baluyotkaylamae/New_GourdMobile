@@ -22,6 +22,9 @@ const AdminMenu = ({ navigation }) => {
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Users")}>
                 <Text style={styles.buttonText}>Manage Users</Text>
             </TouchableOpacity>
+                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("ArchiveUser")}>
+                <Text style={styles.buttonText}>Archived User</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Dashboard")}>
                 <Text style={styles.buttonText}>Dashboard</Text>
@@ -29,6 +32,10 @@ const AdminMenu = ({ navigation }) => {
 
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("PostManagement")}>
                 <Text style={styles.buttonText}>Post Management</Text>
+            </TouchableOpacity>
+
+             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("ArchivePost")}>
+                <Text style={styles.buttonText}>Archived Posts</Text>
             </TouchableOpacity>
         </View>
     );

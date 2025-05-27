@@ -19,7 +19,7 @@ import googleLogo from "../../assets/google.png"; // Adjust the path as necessar
 const Login = (props) => {
   const context = useContext(AuthGlobal);
   const navigation = useNavigation();
-
+  const [warning, setWarning] = useState("");
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
