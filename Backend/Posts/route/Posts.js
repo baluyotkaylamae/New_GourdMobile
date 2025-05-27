@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const postController = require('../controller/PostController'); // Adjust the path as necessary
 const upload = require('../../config/multer');
-const authJwt = require('../../helpers/jwt'); 
+const authJwt = require('../../helpers/jwt');
 
 // Route for creating a new post
 router.post('/', upload.array('images', 5), postController.createPost);
@@ -10,6 +10,11 @@ router.post('/', upload.array('images', 5), postController.createPost);
 // Route for getting all posts
 router.get('/', postController.getPosts);
 
+// Create a Archive post
+router.post('/archive', [authJwt(), upload.array('images')], postController.archivePost);
+// Get all Archive
+router.get('/archive', postController.getArchives);
+router.delete('/archive/:id', authJwt(), postController.deleteArchive);
 // Route for getting a single post by ID
 router.get('/:id', postController.getPostById);
 
@@ -18,6 +23,8 @@ router.put('/:id', upload.array('images', 5), postController.updatePost);
 
 // Route for deleting a post by ID
 router.delete('/:id', postController.deletePost);
+// Delete a Archive by ID
+
 
 // Protected routes for comments - Add the authJwt middleware
 router.post('/:postId/comments', authJwt(), postController.addComment); // Add a comment to a post

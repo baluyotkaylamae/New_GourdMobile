@@ -2,36 +2,87 @@ const { Post } = require('../../models/post'); // Adjust the path to your Post m
 const cloudinary = require('../../config/configCloudinary');
 const upload = require('../../config/multer');
 const jwt = require('jsonwebtoken');
+const { ArchivedPost } = require('../../models/ArchivePost');
 
 // Create a new post
-exports.createPost = async (req, res) => {
-    const { title, content, category } = req.body;
-    const userId = req.auth.userId; // Get userId from the authenticated user
+// exports.createPost = async (req, res) => {
+//     const { title, content, category } = req.body;
+//     const userId = req.auth.userId; // Get userId from the authenticated user
 
-    // Check for missing fields
+//     // Check for missing fields
+//     if (!title || !content || !userId || !category) {
+//         return res.status(400).json({ message: 'Title, content, user ID, and category are required.' });
+//     }
+
+//     try {
+//         // Upload each image to Cloudinary
+//         const images = req.files ? req.files.map(file => file.path) : []; // Handle cases with no uploaded files
+
+//         // Create post with the array of image URLs
+//         const post = new Post({
+//             title,
+//             content,
+//             images,  // Save array of image URLs
+//             user: userId, // Use the authenticated user's ID
+//             category,
+//             likes: 0,
+//             status: 'Pending' // Default status
+//         });
+
+//         const savedPost = await post.save();
+//         res.status(201).json(savedPost);
+//     } catch (error) {
+//         res.status(400).json({ message: error.message });
+//     }
+// };
+
+exports.createPost = async (req, res) => {
+    const { title, content, category, images } = req.body; // <-- add images here
+    const userId = req.auth?.userId;
+
     if (!title || !content || !userId || !category) {
         return res.status(400).json({ message: 'Title, content, user ID, and category are required.' });
     }
 
     try {
-        // Upload each image to Cloudinary
-        const images = req.files ? req.files.map(file => file.path) : []; // Handle cases with no uploaded files
+        let uploadedImages = [];
 
-        // Create post with the array of image URLs
+        if (req.files && req.files.length > 0) {
+            // Upload each image to Cloudinary
+            const uploadPromises = req.files.map(async (file) => {
+                try {
+                    const result = await cloudinary.uploader.upload(file.path, {
+                        folder: 'gourdify',
+                        width: 150,
+                        crop: "scale",
+                    });
+                    return result.secure_url;
+                } catch (err) {
+                    console.error(`Error uploading file ${file.path}:`, err.message);
+                    throw new Error('Failed to upload one or more images to Cloudinary');
+                }
+            });
+            uploadedImages = await Promise.all(uploadPromises);
+        } else if (images && Array.isArray(images) && images.length > 0) {
+            // Use images from body if provided and no files uploaded
+            uploadedImages = images;
+        }
+
         const post = new Post({
             title,
             content,
-            images,  // Save array of image URLs
-            user: userId, // Use the authenticated user's ID
+            images: uploadedImages,
+            user: userId,
             category,
             likes: 0,
-            status: 'Pending' // Default status
+            status: 'Pending'
         });
 
         const savedPost = await post.save();
         res.status(201).json(savedPost);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        console.error('Error in createPost:', error.message);
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 
@@ -414,3 +465,76 @@ exports.deleteReply = async (req, res) => {
 };
 
 
+exports.archivePost = async (req, res) => {
+    const { title, content, category, images, user, likes, status } = req.body;
+    const userId = req.auth?.userId || user; // Use user from body if not in auth
+
+    if (!title || !content || !userId || !category) {
+        return res.status(400).json({ message: 'Title, content, user ID, and category are required.' });
+    }
+
+    try {
+        // If images are not provided in req.body, handle file uploads as needed
+        let uploadedImages = images || [];
+        if (req.files && req.files.length > 0) {
+            const uploadPromises = req.files.map(async (file) => {
+                const result = await cloudinary.uploader.upload(file.path, {
+                    folder: 'gourdify',
+                    width: 150,
+                    crop: "scale",
+                });
+                return result.secure_url;
+            });
+            uploadedImages = await Promise.all(uploadPromises);
+        }
+
+        // Create archive post
+        const archive = new ArchivedPost({
+            title,
+            content,
+            images: uploadedImages,
+            user: userId,
+            category,
+            likes: likes || 0,
+            status: status || 'Pending'
+        });
+
+        const savedArchivePost = await archive.save();
+        res.status(201).json(savedArchivePost);
+    } catch (error) {
+        console.error('Error in archivePost:', error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+// Get all posts
+exports.getArchives = async (req, res) => {
+    try {
+        const archive = await ArchivedPost.find()
+            .populate('user', 'name email image') // Include image in the populated user details
+            .populate('category', 'name description') // Populate category details
+            .populate({
+                path: 'comments.user',
+                select: 'name image', // Populate user details for comments
+            })
+            .populate({
+                path: 'comments.replies.user', // Populate user details for replies within comments
+                select: 'name image',
+            });
+        res.status(200).json(archive);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Delete a Archive by ID
+exports.deleteArchive = async (req, res) => {
+    try {
+        const archive = await ArchivedPost.findByIdAndDelete(req.params.id);
+        if (!archive) return res.status(404).json({ message: 'Post not found' });
+        res.status(204).send(); // No content to send back
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
