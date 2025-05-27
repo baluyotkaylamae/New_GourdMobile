@@ -13,13 +13,14 @@ import Dashboard from '../screens/User/DashboardScreen';
 const Drawer = createDrawerNavigator();
 import { registerForPushNotificationsAsync } from '../utils/Notification';
 import baseURL from '../assets/common/baseurl';
+import UserMonitoringSummary from '../screens/UserMonitoringSummary';
 
 const DrawerNavigator = () => {
   const context = useContext(AuthGlobal);
   const isAdmin = context.stateUser && context.stateUser.user && context.stateUser.user.isAdmin;
   const [user, setUser] = useState(context.stateUser && context.stateUser.user);
 
-  console.log("User in DrawerNavigator:", user);
+  // console.log("User in DrawerNavigator:", user);
   useEffect(() => {
     const registerForPushNotifications = async () => {
       try {
@@ -79,6 +80,16 @@ const DrawerNavigator = () => {
           headerTitle: 'MyDashboard',
           drawerIcon: ({ color, size }) => (
             <Ionicons name="bar-chart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Summary"
+        component={UserMonitoringSummary}
+        options={{
+          headerTitle: 'Summary',
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="stats-chart-outline" size={size} color={color} />
           ),
         }}
       />

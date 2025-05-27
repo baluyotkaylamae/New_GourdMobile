@@ -62,12 +62,12 @@ const ArchivedPost = () => {
     if (!postToArchive) return;
 
     Alert.alert(
-      "Archive Post",
-      "Are you sure you want to archive this post?",
+      "Restore Post",
+      "Are you sure you want to restore this post?",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Archive",
+          text: "Restore",
           style: "destructive",
           onPress: async () => {
             try {

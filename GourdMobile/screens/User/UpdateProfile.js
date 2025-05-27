@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome";
 import InputPrfl from "../../Shared/Form/InputPrfl";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,6 +9,9 @@ import AuthGlobal from "../../Context/Store/AuthGlobal";
 import * as ImagePicker from "expo-image-picker";
 import { Camera } from 'expo-camera';
 import mime from 'mime';
+import { MaterialIcons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 const UpdateProfile = ({ route, navigation }) => {
     const { userDetails } = route.params;
@@ -21,7 +24,6 @@ const UpdateProfile = ({ route, navigation }) => {
         const requestPermissions = async () => {
             const cameraStatus = await Camera.requestCameraPermissionsAsync();
             setHasCameraPermission(cameraStatus.status === 'granted');
-
             const mediaLibraryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (mediaLibraryStatus.status !== 'granted') {
                 alert('Sorry, we need camera roll permissions to make this work!');
@@ -68,10 +70,10 @@ const UpdateProfile = ({ route, navigation }) => {
         try {
             const token = await AsyncStorage.getItem("jwt");
             const userId = context.stateUser.user?.userId;
-    
+
             if (userId) {
                 const formData = new FormData();
-    
+
                 for (const key in updatedProfile) {
                     if (key === 'image' && updatedProfile.image) {
                         formData.append("image", {
@@ -83,15 +85,14 @@ const UpdateProfile = ({ route, navigation }) => {
                         formData.append(key, updatedProfile[key]);
                     }
                 }
-    
-                const response = await axios.put(`${baseURL}users/${userId}`, formData, {
+
+                await axios.put(`${baseURL}users/${userId}`, formData, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'multipart/form-data',
                     },
                 });
-    
-                console.log("Update response:", response.data);
+
                 navigation.navigate("User Profile");
             }
         } catch (error) {
@@ -102,31 +103,45 @@ const UpdateProfile = ({ route, navigation }) => {
     };
 
     return (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <View style={styles.container}>
+        <ScrollView
+            contentContainerStyle={{
+                flexGrow: 1,
+                alignItems: 'center',
+                backgroundColor: '#E0F8E6',
+                paddingVertical: 30,
+            }}
+        >
+            <View style={styles.card}>
                 {loading ? (
-                    <ActivityIndicator size="large" color="#007BFF" />
+                    <ActivityIndicator size="large" color="#207868" />
                 ) : (
                     <>
-                        <TouchableOpacity onPress={handleImagePick}>
+                        <View style={styles.avatarSection}>
                             <Image
-                                source={{ uri: updatedProfile.image || 'https://via.placeholder.com/120' }} // Default image URL
+                                source={{ uri: updatedProfile.image || 'https://via.placeholder.com/120' }}
                                 style={styles.profileImage}
                             />
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.editAvatar}
+                                onPress={handleImagePick}
+                            >
+                                <MaterialIcons name="edit" size={22} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
 
-                        {/* Buttons for Image Picker and Camera */}
-                        <View style={styles.imageContainer}>
+                        <View style={styles.imageButtonRow}>
                             <TouchableOpacity style={styles.imagePicker} onPress={handleImagePick}>
-                                <Icon style={{ color: "white" }} name="photo" />
+                                <MaterialIcons name="collections" size={22} color="#fff" />
+                                <Text style={styles.imageBtnText}>Gallery</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.imagePicker} onPress={takePhoto}>
-                                <Icon style={{ color: "white" }} name="camera" />
+                                <MaterialIcons name="photo-camera" size={22} color="#fff" />
+                                <Text style={styles.imageBtnText}>Camera</Text>
                             </TouchableOpacity>
                         </View>
 
                         {['name', 'email', 'phone', 'street', 'apartment', 'zip', 'city', 'country'].map((field) => (
-                            <View style={styles.infoContainer} key={field}>
+                            <View style={styles.infoRow} key={field}>
                                 <Text style={styles.infoLabel}>{field.charAt(0).toUpperCase() + field.slice(1)}</Text>
                                 <InputPrfl
                                     placeholder={`Enter your ${field}`}
@@ -135,13 +150,12 @@ const UpdateProfile = ({ route, navigation }) => {
                                 />
                             </View>
                         ))}
+
                         <TouchableOpacity style={styles.saveProfileButton} onPress={handleSaveProfile}>
                             <Text style={styles.saveProfileText}>Save Profile</Text>
                         </TouchableOpacity>
-                        
-                        {/* Back to Profile Button */}
-                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("User Profile")}>
-                            <Text style={styles.backButtonText}>Cancel</Text>
+                        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.navigate("User Profile")}>
+                            <Text style={styles.cancelButtonText}>Cancel</Text>
                         </TouchableOpacity>
                     </>
                 )}
@@ -151,91 +165,101 @@ const UpdateProfile = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    scrollContainer: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#E0F8E6',
-    },
-    container: {
-        flex: 1,
-        width: '90%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 30,
+    card: {
+        width: width > 500 ? 450 : '94%',
         backgroundColor: 'white',
-        borderRadius: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 3,
-    },
-    backButton: {
+        borderRadius: 15,
         alignItems: 'center',
-        backgroundColor: 'red', 
-        paddingVertical: 12,
+        paddingVertical: 30,
         paddingHorizontal: 20,
-        borderRadius: 8,
-        marginTop: 20, 
-        width: '90%', 
+        shadowColor: '#207868',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 4,
     },
-    backButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginLeft: 10,
+    avatarSection: {
+        position: "relative",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: 12,
     },
     profileImage: {
         width: 120,
         height: 120,
         borderRadius: 60,
-        marginBottom: 20,
-        borderColor: '#3baea0',
-        borderWidth: 2,
-        backgroundColor: '#ffffff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
+        borderWidth: 2.5,
+        borderColor: "#A4B465",
+        backgroundColor: "#e0f6eb",
+    },
+    editAvatar: {
+        position: "absolute",
+        bottom: 6,
+        right: 12,
+        backgroundColor: "#A4B465",
+        borderRadius: 16,
+        padding: 5,
         elevation: 2,
     },
-    imageContainer: {
+    imageButtonRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         marginBottom: 20,
+        marginTop: 10,
+        gap: 16,
     },
     imagePicker: {
-        backgroundColor: "#1f6f78",
-        padding: 10,
-        borderRadius: 100,
-        marginHorizontal: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#207868",
+        borderRadius: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+        marginHorizontal: 4,
         elevation: 2,
     },
-    infoContainer: {
-        marginBottom: 15,
-        width: '90%',
+    imageBtnText: {
+        color: "#fff",
+        fontWeight: "600",
+        marginLeft: 7,
+        fontSize: 15,
+    },
+    infoRow: {
+        marginBottom: 13,
+        width: '100%',
     },
     infoLabel: {
-        color: '#118a7e',
-        fontSize: 16,
+        color: '#207868',
+        fontSize: 15,
         fontWeight: '600',
-        marginBottom: 8,
+        marginBottom: 6,
+        marginLeft: 2,
     },
     saveProfileButton: {
-        backgroundColor: '#118a7e',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 8,
+        backgroundColor: '#207868',
+        paddingVertical: 14,
+        borderRadius: 10,
         alignItems: 'center',
-        marginTop: 30,
-        width: '90%',
+        marginTop: 18,
+        width: '100%',
+        elevation: 2,
     },
     saveProfileText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
+    },
+    cancelButton: {
+        alignItems: 'center',
+        backgroundColor: '#e74c3c',
+        paddingVertical: 12,
+        borderRadius: 10,
+        marginTop: 13,
+        width: '100%',
+        elevation: 1,
+    },
+    cancelButtonText: {
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',

@@ -95,7 +95,7 @@ const UserArchive = ({ navigation }) => {
             });
 
             if (response.ok) {
-                Alert.alert('Success', 'User archived successfully', [
+                Alert.alert('Success', 'User restore successfully', [
                     { text: 'OK', onPress: () => fetchUsers() }
                 ]);
             } else {

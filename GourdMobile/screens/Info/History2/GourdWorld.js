@@ -1,17 +1,25 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 function GourdWorld() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.header}>Gourds Around the World</Text>
-        <Text style={styles.content}>
-          Gourds are among the oldest cultivated plants in human history, with evidence of domestication stretching back over 10,000 years. Civilizations across Africa, Asia, and the Americas grew gourds not just as a food source but for their versatility. Once dried, the hard shells of gourds made them ideal natural containers, commonly used for storing water, grains, and seeds. The durability of dried gourds also led to their adaptation into tools and even musical instruments. In regions with limited access to manufactured goods, gourds became essential to daily life, especially in arid areas where other materials were scarce.
-        </Text>
-        <Text style={styles.content}>
-          The unique shapes and smooth surface of gourds have also made them a popular medium for artistic and cultural expression worldwide. Many cultures would carve, paint, or decorate gourds, often for ritualistic or ceremonial purposes. In some traditions, they are still used as offerings or as part of cultural ceremonies. Gourds have also had a significant role in traditional music, especially as percussion instruments. For example, in West Africa, the shekere is a gourd-based instrument covered with beads that produce rhythmic sounds, while maracas in Latin America are crafted using small gourds. In India, dried gourds are used in stringed instruments like the tanpura and sitar, serving as resonators and adding depth to the sound.
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.iconCircle}>
+            <Icon name="earth" size={38} color="#58b368" />
+          </View>
+          <Text style={styles.header}>Gourds Around the World</Text>
+        </View>
+        <View style={styles.card}>
+          <Text style={styles.content}>
+            Gourds are among the oldest cultivated plants in human history, with evidence of domestication stretching back over 10,000 years. Civilizations across Africa, Asia, and the Americas grew gourds not just as a food source but for their versatility. Once dried, the hard shells of gourds made them ideal natural containers, commonly used for storing water, grains, and seeds. The durability of dried gourds also led to their adaptation into tools and even musical instruments. In regions with limited access to manufactured goods, gourds became essential to daily life, especially in arid areas where other materials were scarce.
+          </Text>
+          <Text style={styles.content}>
+            The unique shapes and smooth surface of gourds have also made them a popular medium for artistic and cultural expression worldwide. Many cultures would carve, paint, or decorate gourds, often for ritualistic or ceremonial purposes. In some traditions, they are still used as offerings or as part of cultural ceremonies. Gourds have also had a significant role in traditional music, especially as percussion instruments. For example, in West Africa, the shekere is a gourd-based instrument covered with beads that produce rhythmic sounds, while maracas in Latin America are crafted using small gourds. In India, dried gourds are used in stringed instruments like the tanpura and sitar, serving as resonators and adding depth to the sound.
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -20,26 +28,61 @@ function GourdWorld() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E0F8E6",
+    backgroundColor: "#F5FFF8", // lighter, soft green-tinted bg
   },
   scrollContent: {
-    padding: 20,
+    padding: 0,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 30,
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  iconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#e6f9ed",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+    shadowColor: "#b5f2c9",
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 3,
   },
   header: {
-    fontSize: 26,
-    fontWeight: "600",
-    marginBottom: 20,
-    color: "#2D5F2E",
-    textAlign: "center",
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#209150",
+    textAlign: "left",
     fontFamily: "serif",
+    letterSpacing: 0.3,
+    flexShrink: 1,
+  },
+  card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 18,
+    marginVertical: 10,
+    borderRadius: 18,
+    padding: 22,
+    shadowColor: "#aee4bb",
+    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 5 },
+    shadowRadius: 12,
+    elevation: 3,
   },
   content: {
-    fontSize: 16,
-    color: "#555",
-    lineHeight: 24,
-    textAlign: "justify",
+    fontSize: 18,
+    color: "#38734e",
+    lineHeight: 28,
+    textAlign: "left",
     fontFamily: "serif",
-    marginTop: 10,
+    marginBottom: 8,
+    fontWeight: "400",
   },
 });
 

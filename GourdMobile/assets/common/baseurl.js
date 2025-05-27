@@ -1,3 +1,4 @@
+
 // import { Platform } from 'react-native'
 // let baseURL = 'https://3cbc-2405-8d40-404e-3484-4049-f11f-fe45-6bff.ngrok-free.app'
 // {Platform.OS == 'android'
@@ -30,4 +31,3 @@ export default baseURL;
 //     baseURL = 'https://backend-nryq.onrender.com/api/v1/';
 // }
 
-// export default baseURL;

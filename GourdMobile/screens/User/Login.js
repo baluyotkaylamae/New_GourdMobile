@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import InputUser from "../../Shared/Form/InputUser";
 import FormContainer from "../../Shared/Form/FormContainer";
 import { useNavigation } from '@react-navigation/native';
@@ -9,17 +9,16 @@ import { loginUser } from '../../Context/Actions/Auth.actions';
 import EasyButton from "../../Shared/StyledComponents/EasyButton";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
-import Header from "../../Shared/Header";
-import WelcomeLogin from "../../Shared/WelcomeLogin";
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Import Google logo
-import googleLogo from "../../assets/google.png"; // Adjust the path as necessary
+// Import Google logo and app logo (replace with your logo path)
+import googleLogo from "../../assets/google.png";
+import appLogo from "../../assets/NoBG.png"; // <-- Use your actual logo path
 
 const Login = (props) => {
   const context = useContext(AuthGlobal);
   const navigation = useNavigation();
-  const [warning, setWarning] = useState("");
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -44,20 +43,22 @@ const Login = (props) => {
       email,
       password,
     };
-  
+
     if (email === "" || password === "") {
       setError("Please fill in your credentials");
     } else if (context && context.dispatch) {
       const response = await loginUser(user, context.dispatch); // Assuming loginUser returns a token
       if (response && response.token) {
         await AsyncStorage.setItem('jwt', response.token); // Store the token
-        console.log("Token saved to AsyncStorage:", response.token);
+        setError('');
+      } else if (response && response.message) {
+        setError(response.message);
       }
     } else {
       console.error('Context or Dispatch is undefined');
     }
   };
-  
+
   const handleGoogleSignIn = () => {
     if (request) {
       promptAsync();
@@ -65,111 +66,193 @@ const Login = (props) => {
   };
 
   return (
-    <FormContainer>
-      <Header />
-      <WelcomeLogin />
-      <InputUser
-        placeholder={"Email"}
-        name={"email"}
-        id={"email"}
-        value={email}
-        onChangeText={(text) => setEmail(text.toLowerCase())}
-      />
-      <InputUser
-        placeholder={"Password"}
-        name={"password"}
-        id={"password"}
-        secureTextEntry={true}
-        value={password}
-        onChangeText={(text) => setPassword(text)}
-      />
-      {/* <TouchableOpacity onPress={() => navigation.navigate("ForgetPassword")}>
-        <Text style={styles.forgetPassword}>Forget Your Password?</Text>
-      </TouchableOpacity> */}
-      <View style={styles.buttonGroup}>
-        {error ? <Error message={error} /> : null}
-        <EasyButton
-          login
-          primary
-          onPress={handleSubmit}
-          style={styles.loginButton}
-        >
-          <Text style={{ color: "white", fontWeight: "bold", letterSpacing: 1 }}>Sign in</Text>
-        </EasyButton>
-      </View>
-      <View style={[{ marginTop: 40 }, styles.buttonGroup]}>
-        <Text
-          onPress={() => navigation.navigate("Register")}
-          style={[styles.registerButton, { color: "black", fontWeight: "bold" }]}
-        >
-          Create New Account
-        </Text>
-      </View>
-      <Text style={[styles.middleText, { color: "#664229", fontWeight: "bold" }]}>Continue with</Text>
-      <View style={styles.container}>
-        <TouchableOpacity onPress={handleGoogleSignIn} style={styles.googleButtonContainer}>
-          <Image source={googleLogo} style={styles.googleIcon} />
-        </TouchableOpacity>
-      </View>
-    </FormContainer>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: "#E0F8E6" }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <FormContainer style={styles.outerContainer}>
+        <View style={styles.formContent}>
+          <Image source={appLogo} style={styles.logo} />
+          <Text style={styles.cardTitle}>Sign In</Text>
+          <InputUser
+            placeholder={"Email"}
+            name={"email"}
+            id={"email"}
+            value={email}
+            onChangeText={(text) => setEmail(text.toLowerCase())}
+            style={styles.input}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <InputUser
+            placeholder={"Password"}
+            name={"password"}
+            id={"password"}
+            secureTextEntry={true}
+            value={password}
+            onChangeText={(text) => setPassword(text)}
+            style={styles.input}
+          />
+          {/* <TouchableOpacity onPress={() => navigation.navigate("ForgetPassword")}>
+            <Text style={styles.forgetPassword}>Forget Your Password?</Text>
+          </TouchableOpacity> */}
+          <View style={styles.buttonGroup}>
+            {error ? <Error message={error} /> : null}
+            <EasyButton
+              login
+              primary
+              onPress={handleSubmit}
+              style={styles.loginButton}
+            >
+              <Text style={styles.loginButtonText}>Sign in</Text>
+            </EasyButton>
+          </View>
+          <View style={styles.registerRow}>
+            <Text style={styles.registerText}>Don't have an account?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+              <Text style={styles.registerButton}>Create New Account</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.socialDivider}>
+            <View style={styles.line} />
+            <Text style={styles.middleText}>Continue with</Text>
+            <View style={styles.line} />
+          </View>
+          <View style={styles.socialRow}>
+            <TouchableOpacity onPress={handleGoogleSignIn} style={styles.googleButtonContainer}>
+              <Image source={googleLogo} style={styles.googleIcon} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </FormContainer>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  buttonGroup: {
-    width: "80%",
+  outerContainer: {
+    flex: 1,
+    backgroundColor: "#E0F8E6",
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    borderRadius: 16,
+    marginBottom: 6,
+  },
+  formContent: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    marginVertical: 24,
+    width: "95%",
+    alignSelf: "center",
+    elevation: 5,
+    shadowColor: "#207868",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.07,
+    shadowRadius: 20,
     alignItems: "center",
   },
-  middleText: {
-    marginTop: 35,
-    marginBottom: 20,
-    alignSelf: "center",
-    color: "#664229", // Darker color for contrast
+  cardTitle: {
+    fontSize: 22,
     fontWeight: "bold",
+    color: "#A4B465",
+    marginBottom: 12,
+    letterSpacing: 0.5,
+    alignSelf: "flex-start",
   },
-  loginButton: {
-    backgroundColor: "#3baea0", // Second color for the button
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  input: {
+    marginBottom: 15,
+    backgroundColor: "#A4B465",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#A4B465",
+    paddingHorizontal: 12,
+    fontSize: 16,
+    width: "100%",
+  },
+  buttonGroup: {
     width: "100%",
     alignItems: "center",
+    marginTop: 8,
+  },
+  loginButton: {
+    backgroundColor: "#A4B465",
+    borderRadius: 10,
+    paddingVertical: 13,
+    width: "100%",
+    alignItems: "center",
+    marginTop: 5,
   },
   loginButtonText: {
     color: "white",
     fontWeight: "bold",
     letterSpacing: 1,
+    fontSize: 17,
+  },
+  registerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 22,
+    marginBottom: 8,
+  },
+  registerText: {
+    color: "#555",
+    fontSize: 15,
+    marginRight: 5,
   },
   registerButton: {
-    color: "#664229", // Color for register button
+    color: "#A4B465",
     fontWeight: "bold",
-    marginVertical: 10,
+    fontSize: 15.5,
+    textDecorationLine: "underline",
   },
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
+  socialDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 22,
+    width: "100%",
+  },
+  line: {
+    flex: 1,
+    height: 1.1,
+    backgroundColor: "#A4B465",
+    marginHorizontal: 6,
+    borderRadius: 2,
+  },
+  middleText: {
+    color: "#664229",
+    fontWeight: "bold",
+    fontSize: 13.5,
+    letterSpacing: 0.2,
+  },
+  socialRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    width: "100%",
   },
   googleButtonContainer: {
-    width: "20%",
-    backgroundColor: "#E0F8E6", // Keeping the same color for Google sign-in button
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    backgroundColor: "#E0F8E6",
     borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 30,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#b9e7d6",
   },
   googleIcon: {
-    width: 24, // Adjust size as needed
-    height: 24, // Adjust size as needed
+    width: 28,
+    height: 28,
   },
   forgetPassword: {
-    color: "#118a7e", // Third color for text
+    color: "#118a7e",
     marginTop: 5,
     textAlign: "center",
   },
 });
 
 export default Login;
-

@@ -16,6 +16,7 @@ export const loginUser = (user, dispatch) => {
     })
     .then((res) => res.json())
     .then((data) => {
+        console.log("Login API response:", data);
         if (data && data.token) {
             const token = data.token;
             AsyncStorage.setItem("jwt", token); // Save the token

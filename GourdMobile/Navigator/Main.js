@@ -8,6 +8,8 @@ import DrawerNavigator from "./DrawerNavigator";
 import { jwtDecode } from "jwt-decode";
 import UpdateComment from '../screens/Post/UpdateComment';
 import UpdateReply from '../screens/Post/UpdateReplies';
+import UpdatePost from '../screens/Post/editPost'; // Adjust the path if needed
+import Register from '../screens/User/Register'; // Adjust the path if needed
 
 const Stack = createNativeStackNavigator();
 
@@ -17,22 +19,28 @@ const Main = () => {
 
     useEffect(() => {
         const checkToken = async () => {
-            const token = await AsyncStorage.getItem("jwt"); // Retrieve the token
+            const token = await AsyncStorage.getItem("jwt");
             if (token) {
                 try {
-                    const decoded = jwtDecode(token); // Decode the token
-                    context.dispatch({ type: "SET_CURRENT_USER", payload: decoded }); // Update authentication state
+                    const decoded = jwtDecode(token);
+                    const currentTime = Date.now() / 1000;
+                    if (decoded.exp && decoded.exp > currentTime) {
+                        context.dispatch({ type: "SET_CURRENT_USER", payload: decoded });
+                    } else {
+                        // Token expired, remove it and force login
+                        await AsyncStorage.removeItem("jwt");
+                        context.dispatch({ type: "SET_CURRENT_USER", payload: {} });
+                    }
                 } catch (error) {
-                    console.error("Token decoding error:", error);
-                    context.dispatch({ type: "SET_CURRENT_USER", payload: {} }); // Clear state if decoding fails
+                    // Invalid token, force login
+                    await AsyncStorage.removeItem("jwt");
+                    context.dispatch({ type: "SET_CURRENT_USER", payload: {} });
                 }
             } else {
-                console.warn("No token found in AsyncStorage.");
-                context.dispatch({ type: "SET_CURRENT_USER", payload: {} }); // Clear state if no token
+                context.dispatch({ type: "SET_CURRENT_USER", payload: {} });
             }
-            setLoading(false); // Stop loading after checking the token
+            setLoading(false);
         };
-
         checkToken();
     }, []);
 
@@ -66,13 +74,22 @@ const Main = () => {
                         component={UpdateReply}
                         options={{ title: "Update Reply" }}
                     />
+                    <Stack.Screen name="UpdatePost" component={UpdatePost} />
+
                 </>
             ) : (
-                <Stack.Screen
-                    name="Login"
-                    component={LoginScreen}
-                    options={{ headerShown: false }}
-                />
+                <>
+                    <Stack.Screen
+                        name="Login"
+                        component={LoginScreen}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="Register"
+                        component={Register}
+                        options={{ title: "Register" }}
+                    />
+                </>
             )}
         </Stack.Navigator>
     );

@@ -1,84 +1,144 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { MaterialIcons, FontAwesome5, Ionicons, Entypo } from "@expo/vector-icons";
+
+// Styles
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#9EBC8A",
+    paddingTop: 38,
+    paddingHorizontal: 0,
+  },
+  headerSection: {
+    alignItems: "center",
+    marginBottom: 18,
+    paddingHorizontal: 22,
+    marginTop: 10,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#1f6f78",
+    letterSpacing: 2,
+    marginBottom: 4,
+    textTransform: "uppercase",
+  },
+  subtitle: {
+    fontSize: 25,
+    color: "#FAF6E9",
+    marginBottom: 8,
+    fontWeight: "500",
+    letterSpacing: 0.3,
+    textAlign: "center",
+  },
+  menuContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 38,
+    paddingHorizontal: 14,
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 26,
+    marginVertical: 10,
+    width: "94%",
+    shadowColor: "#207868",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 7,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#e9f7f3",
+  },
+  icon: {
+    marginRight: 15,
+    backgroundColor: "#eafaf2",
+    padding: 8,
+    borderRadius: 14,
+  },
+  buttonText: {
+    color: "#207868",
+    fontSize: 19,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "capitalize",
+  },
+});
+
+// Button definitions (with icons)
+const BUTTONS = [
+  {
+    label: "View Categories",
+    iconComponent: <MaterialIcons name="category" size={24} color="#207868" style={styles.icon} />,
+    nav: "Categories",
+  },
+  {
+    label: "View Gourd Types",
+    iconComponent: <FontAwesome5 name="leaf" size={22} color="#207868" style={styles.icon} />,
+    nav: "GourdType",
+  },
+  {
+    label: "View Gourd Varieties",
+    iconComponent: <FontAwesome5 name="seedling" size={22} color="#207868" style={styles.icon} />,
+    nav: "GourdVarieties",
+  },
+  {
+    label: "Manage Users",
+    iconComponent: <Ionicons name="people" size={24} color="#207868" style={styles.icon} />,
+    nav: "Users",
+  },
+  {
+    label: "Archived User",
+    iconComponent: <Ionicons name="archive" size={24} color="#207868" style={styles.icon} />,
+    nav: "ArchiveUser",
+  },
+  {
+    label: "Dashboard",
+    iconComponent: <MaterialIcons name="dashboard" size={24} color="#207868" style={styles.icon} />,
+    nav: "Dashboard",
+  },
+  {
+    label: "Post Management",
+    iconComponent: <Entypo name="clipboard" size={24} color="#207868" style={styles.icon} />,
+    nav: "PostManagement",
+  },
+  {
+    label: "Archived Posts",
+    iconComponent: <Entypo name="archive" size={24} color="#207868" style={styles.icon} />,
+    nav: "ArchivePost",
+  },
+];
 
 const AdminMenu = ({ navigation }) => {
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Admin Dashboard</Text>
-
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Categories")}>
-                <Text style={styles.buttonText}>View Categories</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("GourdType")}>
-                <Text style={styles.buttonText}> View Gourd Types</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("GourdVarieties")}>
-                <Text style={styles.buttonText}> View Gourd Varieties</Text>
-            </TouchableOpacity>
-
-
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Users")}>
-                <Text style={styles.buttonText}>Manage Users</Text>
-            </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("ArchiveUser")}>
-                <Text style={styles.buttonText}>Archived User</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Dashboard")}>
-                <Text style={styles.buttonText}>Dashboard</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("PostManagement")}>
-                <Text style={styles.buttonText}>Post Management</Text>
-            </TouchableOpacity>
-
-             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("ArchivePost")}>
-                <Text style={styles.buttonText}>Archived Posts</Text>
-            </TouchableOpacity>
-        </View>
-    );
+  return (
+    <View style={styles.screen}>
+      <View style={styles.headerSection}>
+        <Text style={styles.title}>Admin Dashboard</Text>
+        <Text style={styles.subtitle}>Welcome, Admin! Select an area to manage.</Text>
+      </View>
+      <ScrollView
+        contentContainerStyle={styles.menuContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {BUTTONS.map((btn, idx) => (
+          <TouchableOpacity
+            key={idx}
+            style={styles.button}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate(btn.nav)}
+          >
+            {btn.iconComponent}
+            <Text style={styles.buttonText}>{btn.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
-        backgroundColor: "#F5F5F5",
-    },
-    title: {
-        fontSize: 36, // Increased font size for emphasis
-        fontWeight: "700", // Changed to semi-bold for better readability
-        color: "#2c3e50",
-        marginBottom: 50,
-        textTransform: "uppercase",
-        letterSpacing: 3,
-        textAlign: "center", // Centered text alignment
-    },
-    button: {
-        backgroundColor: "#55c2a7",
-        borderRadius: 30,
-        paddingVertical: 15,
-        marginVertical: 12, // Adjusted margin for better spacing
-        width: "80%",
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-        elevation: 4, // Increased elevation for better shadow effect
-        transition: 'background-color 0.3s ease', // Smooth transition for hover effect (if applicable)
-    },
-    buttonText: {
-        color: "#fff",
-        fontSize: 18,
-        fontWeight: "600", // Changed to medium for a cleaner look
-        textTransform: "uppercase",
-        letterSpacing: 1.2, // Adjusted letter spacing
-    },
-});
 
 export default AdminMenu;
