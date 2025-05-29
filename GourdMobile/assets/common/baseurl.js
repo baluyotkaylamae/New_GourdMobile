@@ -12,7 +12,7 @@ import { Platform } from 'react-native';
 let baseURL = '';
 
 if (Platform.OS === 'android') {
-    baseURL = 'http://192.168.1.4:4000/api/v1/';
+    baseURL = 'https://new-gourdmobile.onrender.com/api/v1/';
 } else {
     baseURL = 'https://backend-nryq.onrender.com/api/v1/';
 }

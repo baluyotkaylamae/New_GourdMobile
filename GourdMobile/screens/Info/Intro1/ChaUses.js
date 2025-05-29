@@ -1,23 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+const { width } = Dimensions.get('window');
 
 function ChaUses() {
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <View style={styles.iconCircle}>
             <Icon name="star-outline" size={38} color="#58b368" />
           </View>
           <Text style={styles.header}>Characteristics & Uses of Gourds</Text>
         </View>
-        
         <View style={styles.card}>
           <Text style={styles.content}>
             Gourds have been valued across cultures for both their nutritional and practical qualities. Not only are they edible and nutritious, but once dried, many gourds develop a hard outer shell, making them suitable for a variety of non-food uses. Here’s a look at the most common uses of gourds:
           </Text>
-          
           <View style={styles.bulletRow}>
             <Icon name="silverware-fork-knife" size={22} color="#3c8c3d" style={styles.bulletIcon} />
             <Text style={styles.bulletText}>
@@ -25,7 +25,6 @@ function ChaUses() {
               Gourds are widely used in cuisines around the world. Bitter gourd, for instance, is a popular ingredient in Asian dishes due to its unique bitter flavor and health benefits, while sponge gourd is often enjoyed in soups and stir-fries.
             </Text>
           </View>
-          
           <View style={styles.bulletRow}>
             <Icon name="pill" size={22} color="#3c8c3d" style={styles.bulletIcon} />
             <Text style={styles.bulletText}>
@@ -33,7 +32,6 @@ function ChaUses() {
               Many types of gourds are believed to have health benefits. For example, bitter gourd is known for its ability to help regulate blood sugar levels and is high in vitamins A and C, iron, and potassium.
             </Text>
           </View>
-
           <View style={styles.bulletRow}>
             <Icon name="palette-outline" size={22} color="#3c8c3d" style={styles.bulletIcon} />
             <Text style={styles.bulletText}>
@@ -50,10 +48,14 @@ function ChaUses() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5FFF8", // lighter, fresh green-tinted
+    backgroundColor: "#F5FFF8",
   },
   scrollContent: {
-    padding: 0,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 34,
+    maxWidth: Math.min(500, width - 8),
+    alignSelf: "center",
   },
   headerRow: {
     flexDirection: "row",
@@ -64,9 +66,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   iconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: "#e6f9ed",
     justifyContent: "center",
     alignItems: "center",
@@ -77,11 +79,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   header: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "700",
     color: "#209150",
     textAlign: "left",
-    fontFamily: "serif",
     letterSpacing: 0.3,
     flexShrink: 1,
   },
@@ -98,11 +99,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   content: {
-    fontSize: 18,
+    fontSize: 17,
     color: "#38734e",
-    lineHeight: 28,
+    lineHeight: 26,
     textAlign: "justify",
-    fontFamily: "serif",
     marginBottom: 16,
     fontWeight: "400",
   },
@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 14,
     marginLeft: 2,
+    paddingRight: 4,
   },
   bulletIcon: {
     marginRight: 13,
@@ -118,10 +119,9 @@ const styles = StyleSheet.create({
   },
   bulletText: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 15,
     color: "#2C482D",
-    lineHeight: 26,
-    fontFamily: "serif",
+    lineHeight: 24,
     textAlign: "left",
   },
   bold: {

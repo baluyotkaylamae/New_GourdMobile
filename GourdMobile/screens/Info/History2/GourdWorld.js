@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+const { width } = Dimensions.get('window');
 
 function GourdWorld() {
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <View style={styles.iconCircle}>
             <Icon name="earth" size={38} color="#58b368" />
@@ -28,10 +30,14 @@ function GourdWorld() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5FFF8", // lighter, soft green-tinted bg
+    backgroundColor: "#F5FFF8",
   },
   scrollContent: {
-    padding: 0,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 34,
+    maxWidth: Math.min(500, width - 8),
+    alignSelf: "center",
   },
   headerRow: {
     flexDirection: "row",
@@ -42,9 +48,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   iconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: "#e6f9ed",
     justifyContent: "center",
     alignItems: "center",
@@ -55,11 +61,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   header: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "700",
     color: "#209150",
     textAlign: "left",
-    fontFamily: "serif",
     letterSpacing: 0.3,
     flexShrink: 1,
   },
@@ -76,11 +81,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   content: {
-    fontSize: 18,
+    fontSize: 17,
     color: "#38734e",
-    lineHeight: 28,
-    textAlign: "left",
-    fontFamily: "serif",
+    lineHeight: 26,
+    textAlign: "justify",
     marginBottom: 8,
     fontWeight: "400",
   },

@@ -176,10 +176,10 @@ const InfoMenu = ({ navigation }) => {
                             <Icon name={subtopicIcons.BottleGourd} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
                             <Text style={styles.subtopic}>Bottle Gourd (Upo)</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("WaxGourd")}>
+                        {/* <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("WaxGourd")}>
                             <Icon name={subtopicIcons.WaxGourd} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
                             <Text style={styles.subtopic}>Wax Gourd (Kundol)</Text>
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                     </View>
                 )}
             </TouchableOpacity>

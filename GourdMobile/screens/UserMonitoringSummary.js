@@ -42,9 +42,9 @@ const UserMonitoringSummary = () => {
                 data={sortedMonitorings}
                 keyExtractor={item => item._id}
                 renderItem={({ item }) => {
-                    const pollinated = item.pollinatedFlowers || 0;
-                    const harvested = item.fruitsHarvested || 0;
-                    const failed = Math.max(pollinated - harvested, 0);
+                    const pollinated = Array.isArray(item.pollinatedFlowerImages) ? item.pollinatedFlowerImages.length : 0;
+                    const harvested = Array.isArray(item.fruitHarvestedImages) ? item.fruitHarvestedImages.length : 0;
+                    const failed = (status === "Failed" && harvested === 0) ? Math.max(pollinated, 0) : 0;
                     const percent = pollinated > 0 ? ((harvested / pollinated) * 100).toFixed(1) : "0.0";
                     const status = item.status || "Pending";
                     const statusColor =
@@ -69,7 +69,7 @@ const UserMonitoringSummary = () => {
                                 </Text>
                             </Text>
                             {/* Only show these if not Pending or In Progress */}
-                            {status !== "Pending" && status !== "In Progress" && (
+                            {status !== "Pending"  && (
                                 <>
                                     <Text>
                                         Fruits Harvested:{" "}
@@ -101,7 +101,7 @@ const UserMonitoringSummary = () => {
                                 </View>
                             )}
                             {/* Fruits Harvested Images (only if not Pending or In Progress) */}
-                            {status !== "Pending" && status !== "In Progress" && item.fruitHarvestedImages && item.fruitHarvestedImages.length > 0 && (
+                            {status !== "Pending" && item.fruitHarvestedImages && item.fruitHarvestedImages.length > 0 && (
                                 <View style={styles.imageRow}>
                                     <Text style={styles.imageLabel}>Fruits Harvested Images:</Text>
                                     <View style={styles.imageList}>

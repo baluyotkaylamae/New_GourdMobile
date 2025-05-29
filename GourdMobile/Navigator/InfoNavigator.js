@@ -13,7 +13,7 @@ import PollinationProcess from "../screens/Info/Gender/PollinationProcs"
 import PollinationChallenges from "../screens/Info/Gender/Challenges";
 import BitterGourd from "../screens/Info/Types/BitterGourd";
 import SpongeGourd from "../screens/Info/Types/SpongeGourd";
-import BottleGourd from "../screens/Info/Types/SpongeGourd";
+import BottleGourd from "../screens/Info/Types/BottleGourd";
 import WaxGourd from "../screens/Info/Types/WaxGourd";
 import NutritionalProfile from "../screens/Info/HealthBenefits/NutriProfile";
 import MedicinalUses from "../screens/Info/HealthBenefits/MedicinalUses";
@@ -44,7 +44,7 @@ const InfoNavigator = () => {
             <Stack.Screen name="BitterGourd" component={BitterGourd}/>
             <Stack.Screen name="SpongeGourd" component={SpongeGourd}/>
             <Stack.Screen name="BottleGourd" component={BottleGourd}/>
-            <Stack.Screen name="WaxGourd" component={WaxGourd}/>
+            {/* <Stack.Screen name="WaxGourd" component={WaxGourd}/> */}
             <Stack.Screen name="NutritionalProfile" component={NutritionalProfile}/>
             <Stack.Screen name="MedicinalUses" component={MedicinalUses}/>
             <Stack.Screen name="Pests" component={Pests}/>
