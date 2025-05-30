@@ -61,15 +61,17 @@ const UserMonitoringSummary = () => {
                             <Text>Date: <Text style={styles.bold}>
                                 {item.dateOfPollination ? new Date(item.dateOfPollination).toLocaleDateString() : "N/A"}
                             </Text></Text>
-                            <Text>Total Pollinated Flowers: <Text style={styles.bold}>{pollinated}</Text></Text>
+
                             <Text>
                                 Status:{" "}
                                 <Text style={[styles.bold, { color: statusColor }]}>
                                     {status}
                                 </Text>
                             </Text>
+                            <Text>Total Pollinated Flowers: <Text style={styles.bold}>{pollinated}</Text></Text>
+
                             {/* Only show these if not Pending or In Progress */}
-                            {status !== "Pending"  && (
+                            {status !== "Pending" && (
                                 <>
                                     <Text>
                                         Fruits Harvested:{" "}

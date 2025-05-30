@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert, Modal, TouchableOpacity, Image, TextInput } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Modal, TouchableOpacity, Image, TextInput, Pressable } from "react-native";
 import EasyButton from "../Shared/StyledComponents/EasyButton";
 import baseURL from "../assets/common/baseurl";
 import axios from "axios";
@@ -12,6 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
 import mime from "mime";
 import Toast from "react-native-toast-message";
+import { Alert } from "react-native";
 
 const MonitoringScreen = () => {
   const context = useContext(AuthGlobal);
@@ -28,7 +29,7 @@ const MonitoringScreen = () => {
   const [datePickerVisible, setDatePickerVisible] = useState(null);
   const [GourdTypeOpen, setGourdTypeOpen] = useState(false);
   const [modalGourdTypeOpen, setModalGourdTypeOpen] = useState(false);
-  const [editModalGourdTypeOpen, setEditModalGourdTypeOpen] = useState(false); // modal dropdown
+  const [editModalGourdTypeOpen, setEditModalGourdTypeOpen] = useState(false);
   const [selectedGourdType, setSelectedGourdType] = useState(null);
   const [dateError, setDateError] = useState("");
   const [monitoringData, setMonitoringData] = useState({
@@ -38,36 +39,83 @@ const MonitoringScreen = () => {
     plotNo: "",
   });
 
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+  // Loader state for create monitoring, edit, delete, etc.
+  const [isLoading, setIsLoading] = useState(false);
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setMonitoringData((prev) => ({
-        ...prev,
-        pollinatedFlowerImages: [...(prev.pollinatedFlowerImages || []), result.assets[0].uri],
-      }));
-    }
+  // Custom action sheet state
+  const [imageActionSheetVisible, setImageActionSheetVisible] = useState(false);
+  const [actionSheetForEdit, setActionSheetForEdit] = useState(false);
+
+  const openImageActionSheet = (forEdit = false) => {
+    setActionSheetForEdit(forEdit);
+    setImageActionSheetVisible(true);
   };
 
-  const pickEditImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+  const closeImageActionSheet = () => setImageActionSheetVisible(false);
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      setEditMonitoringData((prev) => ({
-        ...prev,
-        pollinatedFlowerImages: [
-          ...(prev.pollinatedFlowerImages || []),
-          result.assets[0].uri,
-        ],
-      }));
+  // Camera/gallery logic, for modern action sheet
+  const handleImageAction = async (type) => {
+    closeImageActionSheet();
+    if (type === "camera") {
+      const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!cameraPerm.granted) {
+        Toast.show({ type: "error", text1: "Camera permission denied" });
+        return;
+      }
+      let result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        if (actionSheetForEdit) {
+          setEditMonitoringData((prev) => ({
+            ...prev,
+            pollinatedFlowerImages: [
+              ...(prev.pollinatedFlowerImages || []),
+              result.assets[0].uri,
+            ],
+          }));
+        } else {
+          setMonitoringData((prev) => ({
+            ...prev,
+            pollinatedFlowerImages: [
+              ...(prev.pollinatedFlowerImages || []),
+              result.assets[0].uri,
+            ],
+          }));
+        }
+      }
+    } else if (type === "gallery") {
+      const libraryPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!libraryPerm.granted) {
+        Toast.show({ type: "error", text1: "Media library permission denied" });
+        return;
+      }
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        if (actionSheetForEdit) {
+          setEditMonitoringData((prev) => ({
+            ...prev,
+            pollinatedFlowerImages: [
+              ...(prev.pollinatedFlowerImages || []),
+              result.assets[0].uri,
+            ],
+          }));
+        } else {
+          setMonitoringData((prev) => ({
+            ...prev,
+            pollinatedFlowerImages: [
+              ...(prev.pollinatedFlowerImages || []),
+              result.assets[0].uri,
+            ],
+          }));
+        }
+      }
     }
   };
 
@@ -104,7 +152,6 @@ const MonitoringScreen = () => {
       setError(null);
       fetchMonitoringRecords();
       fetchGourdData();
-
       return () => {
         setGourdTypes([]);
         setMonitorings([]);
@@ -124,7 +171,7 @@ const MonitoringScreen = () => {
   };
 
   const addMonitoring = async () => {
-    setDateError(""); // Reset error
+    setDateError("");
     if (!monitoringData.gourdType) {
       Toast.show({ type: "error", text1: "Please select a gourd type." });
       return;
@@ -147,6 +194,8 @@ const MonitoringScreen = () => {
       Toast.show({ type: "error", text1: "No token found." });
       return;
     }
+
+    setIsLoading(true);
 
     let formData = new FormData();
     formData.append("gourdType", monitoringData.gourdType._id);
@@ -172,8 +221,8 @@ const MonitoringScreen = () => {
           Authorization: `Bearer ${storedToken}`,
         },
       };
-
       const res = await axios.post(`${baseURL}Monitoring`, formData, config);
+      setIsLoading(false);
       if (res.status === 201) {
         Toast.show({
           topOffset: 60,
@@ -181,20 +230,19 @@ const MonitoringScreen = () => {
           text1: "Monitoring Record Created",
           text2: "Your monitoring data has been saved.",
         });
-
         setMonitoringData({
           gourdType: "",
           dateOfPollination: new Date(),
           pollinatedFlowerImages: [],
           plotNo: "",
         });
-
         setTimeout(() => {
           setCreateModalVisible(false);
           fetchMonitoringRecords();
         }, 500);
       }
     } catch (error) {
+      setIsLoading(false);
       Toast.show({
         position: 'bottom',
         bottomOffset: 20,
@@ -206,6 +254,7 @@ const MonitoringScreen = () => {
   };
 
   const deleteMonitoring = async (id) => {
+    setIsLoading(true);
     try {
       const storedToken = await AsyncStorage.getItem("jwt");
       await axios.delete(`${baseURL}Monitoring/${id}`, {
@@ -215,6 +264,8 @@ const MonitoringScreen = () => {
       Alert.alert("Success", "Monitoring deleted successfully");
     } catch (err) {
       setError("Error deleting monitoring");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -228,6 +279,7 @@ const MonitoringScreen = () => {
   };
 
   const handleModalClose = () => {
+    if (isLoading) return;
     resetMonitoringData();
     setEditMonitoringData(null);
     setEditModalVisible(false);
@@ -241,6 +293,7 @@ const MonitoringScreen = () => {
   };
 
   const confirmDeleteMonitoring = (id) => {
+    if (isLoading) return;
     Alert.alert(
       "Delete Monitoring",
       "Are you sure you want to delete this monitoring?",
@@ -256,6 +309,8 @@ const MonitoringScreen = () => {
   const updateMonitoring = async () => {
     if (!editMonitoringData) return;
 
+    setIsLoading(true);
+
     const storedToken = await AsyncStorage.getItem("jwt");
     let formData = new FormData();
 
@@ -263,18 +318,15 @@ const MonitoringScreen = () => {
     formData.append("dateOfPollination", new Date(editMonitoringData.dateOfPollination).toISOString());
     formData.append("plotNo", editMonitoringData.plotNo);
 
-    // Recalculate dateOfHarvestStart and dateOfHarvest (7 days)
     const start = new Date(editMonitoringData.dateOfPollination);
     formData.append("dateOfHarvestStart", start.toISOString());
 
-    // Add this block to update dateOfHarvest array
     for (let i = 0; i < 7; i++) {
       const day = new Date(start);
       day.setDate(start.getDate() + 7 + i);
       formData.append(`dateOfHarvest[${i}][date]`, day.toISOString());
       formData.append(`dateOfHarvest[${i}][notificationStatus]`, false);
     }
-    // Send all images: existing (URLs) and new (local files)
     (editMonitoringData.pollinatedFlowerImages || []).forEach((imageObj, index) => {
       if (typeof imageObj === 'object' && imageObj.url && imageObj.url.startsWith("http")) {
         formData.append("pollinatedFlowerImages", JSON.stringify(imageObj));
@@ -298,6 +350,7 @@ const MonitoringScreen = () => {
         },
       };
       const res = await axios.put(`${baseURL}Monitoring/${editMonitoringData._id}`, formData, config);
+      setIsLoading(false);
       if (res.status === 200) {
         Toast.show({
           topOffset: 60,
@@ -309,6 +362,7 @@ const MonitoringScreen = () => {
         fetchMonitoringRecords();
       }
     } catch (error) {
+      setIsLoading(false);
       Toast.show({
         type: "error",
         text1: "Error updating monitoring",
@@ -324,7 +378,6 @@ const MonitoringScreen = () => {
     if (!monitoring.dateOfHarvest || !Array.isArray(monitoring.dateOfHarvest) || monitoring.dateOfHarvest.length === 0) return false;
     const day1 = new Date(monitoring.dateOfHarvest[0].date);
     const today = new Date();
-    // Compare only the date part (ignore time)
     return (
       day1.getFullYear() < today.getFullYear() ||
       (day1.getFullYear() === today.getFullYear() && day1.getMonth() < today.getMonth()) ||
@@ -332,15 +385,51 @@ const MonitoringScreen = () => {
     );
   };
 
-  // 2. Then use it in filteredMonitorings
   const filteredMonitorings = (selectedGourdType
     ? monitorings.filter((item) => item.gourdType._id === selectedGourdType)
     : monitorings
   ).filter(item => !isHarvestStarted(item));
 
-
   return (
     <View style={{ backgroundColor: "#F0F0F0", flex: 1 }}>
+      {/* Loader Modal */}
+      <Modal
+        visible={isLoading}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.loaderOverlay}>
+          <ActivityIndicator size="large" color="#3baea0" />
+          <Text style={{marginTop: 15, color: "#333"}}>Processing...</Text>
+        </View>
+      </Modal>
+
+      {/* Modern Custom Action Sheet for Add Image */}
+      <Modal
+        visible={imageActionSheetVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeImageActionSheet}
+      >
+        <Pressable style={styles.actionSheetOverlay} onPress={closeImageActionSheet}>
+          <Pressable style={styles.actionSheetContainer}>
+            <Text style={styles.actionSheetTitle}>Add Image</Text>
+            <TouchableOpacity style={styles.actionSheetButton} onPress={() => handleImageAction("camera")}>
+              <Icon name="camera" size={22} color="#3baea0" style={{ marginRight: 10 }} />
+              <Text style={styles.actionSheetButtonText}>Take Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionSheetButton} onPress={() => handleImageAction("gallery")}>
+              <Icon name="image" size={22} color="#3baea0" style={{ marginRight: 10 }} />
+              <Text style={styles.actionSheetButtonText}>Choose from Gallery</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionSheetButton, {borderTopWidth: 1, borderColor: "#eee"}]} onPress={closeImageActionSheet}>
+              <Text style={[styles.actionSheetButtonText, { color: "#d00" }]}>Cancel</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <View style={{ zIndex: 3000, margin: 10 }}>
         <DropDownPicker
           open={GourdTypeOpen}
@@ -362,6 +451,7 @@ const MonitoringScreen = () => {
           placeholder="Select Gourd Type"
           style={styles.input}
           dropDownStyle={styles.dropdown}
+          disabled={isLoading}
         />
       </View>
 
@@ -387,7 +477,6 @@ const MonitoringScreen = () => {
               {item.status}
             </Text>
 
-            {/* Pollinated Flower Images */}
             {item.pollinatedFlowerImages && item.pollinatedFlowerImages.length > 0 && (
               <View style={styles.imageRow}>
                 <Text style={styles.imageLabel}>Pollinated Flowers:</Text>
@@ -403,17 +492,18 @@ const MonitoringScreen = () => {
               </View>
             )}
 
-            {/* Harvested Fruits images are hidden here */}
-
             <View style={styles.iconContainer}>
               <EasyButton
                 primary
                 medium
                 onPress={() => {
-                  setEditMonitoringData(item);
-                  setEditModalVisible(true);
+                  if (!isLoading) {
+                    setEditMonitoringData(item);
+                    setEditModalVisible(true);
+                  }
                 }}
                 style={styles.icon}
+                disabled={isLoading}
               >
                 <Icon name="pencil" size={20} color="white" />
               </EasyButton>
@@ -422,6 +512,7 @@ const MonitoringScreen = () => {
                 medium
                 onPress={() => confirmDeleteMonitoring(item._id)}
                 style={styles.icon}
+                disabled={isLoading}
               >
                 <Icon name="trash" size={20} color="white" />
               </EasyButton>
@@ -431,14 +522,18 @@ const MonitoringScreen = () => {
         keyExtractor={(item) => item._id}
         onRefresh={handleRefresh}
         refreshing={refreshing}
+        scrollEnabled={!isLoading}
       />
 
       <TouchableOpacity
         style={styles.floatingButton}
         onPress={() => {
-          resetMonitoringData();
-          setCreateModalVisible(true);
+          if (!isLoading) {
+            resetMonitoringData();
+            setCreateModalVisible(true);
+          }
         }}
+        disabled={isLoading}
       >
         <Icon name="plus" size={24} color="white" />
       </TouchableOpacity>
@@ -473,12 +568,14 @@ const MonitoringScreen = () => {
                 placeholder="Select Gourd Type"
                 style={styles.input}
                 dropDownStyle={styles.dropdown}
+                disabled={isLoading}
               />
             </View>
 
             <TouchableOpacity
               style={styles.input}
-              onPress={() => setDatePickerVisible("pollination")}
+              onPress={() => !isLoading && setDatePickerVisible("pollination")}
+              disabled={isLoading}
             >
               <Text>{new Date(monitoringData.dateOfPollination).toDateString()}</Text>
             </TouchableOpacity>
@@ -491,8 +588,12 @@ const MonitoringScreen = () => {
               {monitoringData.pollinatedFlowerImages?.map((image, index) => (
                 <Image key={index} source={{ uri: image }} style={styles.imagePreview} />
               ))}
-              <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-                <Text style={styles.uploadText}>+ Add Image</Text>
+              <TouchableOpacity
+                style={styles.addImageIconButton}
+                onPress={() => openImageActionSheet(false)}
+                disabled={isLoading}
+              >
+                <Icon name="camera" size={28} color="#555" />
               </TouchableOpacity>
             </View>
 
@@ -502,13 +603,14 @@ const MonitoringScreen = () => {
               value={monitoringData.plotNo}
               onChangeText={(text) => setMonitoringData({ ...monitoringData, plotNo: text })}
               placeholder="Enter Plot No"
+              editable={!isLoading}
             />
 
             <View style={styles.buttonRow}>
-              <EasyButton medium primary onPress={addMonitoring}>
+              <EasyButton medium primary onPress={addMonitoring} disabled={isLoading}>
                 <Text style={{ color: "white", fontWeight: "bold" }}>Create</Text>
               </EasyButton>
-              <EasyButton medium style={styles.cancelButton} onPress={handleModalClose}>
+              <EasyButton medium style={styles.cancelButton} onPress={handleModalClose} disabled={isLoading}>
                 <Text style={{ color: "white", fontWeight: "bold" }}>Cancel</Text>
               </EasyButton>
             </View>
@@ -557,11 +659,13 @@ const MonitoringScreen = () => {
                   placeholder="Select Gourd Type"
                   style={styles.input}
                   dropDownStyle={styles.dropdown}
+                  disabled={isLoading}
                 />
                 {/* Date of Pollination Picker */}
                 <TouchableOpacity
                   style={styles.input}
-                  onPress={() => setDatePickerVisible("editPollination")}
+                  onPress={() => !isLoading && setDatePickerVisible("editPollination")}
+                  disabled={isLoading}
                 >
                   <Text>{new Date(editMonitoringData.dateOfPollination).toDateString()}</Text>
                 </TouchableOpacity>
@@ -604,19 +708,25 @@ const MonitoringScreen = () => {
                             justifyContent: 'center',
                           }}
                           onPress={() => {
+                            if (isLoading) return;
                             setEditMonitoringData(prev => ({
                               ...prev,
                               pollinatedFlowerImages: prev.pollinatedFlowerImages.filter((_, i) => i !== idx)
                             }));
                           }}
+                          disabled={isLoading}
                         >
                           <Text style={{ color: 'white', fontWeight: 'bold' }}>×</Text>
                         </TouchableOpacity>
                       </View>
                     );
                   })}
-                  <TouchableOpacity style={styles.uploadButton} onPress={pickEditImage}>
-                    <Text style={styles.uploadText}>+ Add Image</Text>
+                  <TouchableOpacity
+                    style={styles.addImageIconButton}
+                    onPress={() => openImageActionSheet(true)}
+                    disabled={isLoading}
+                  >
+                    <Icon name="camera" size={28} color="#555" />
                   </TouchableOpacity>
                 </View>
 
@@ -627,13 +737,14 @@ const MonitoringScreen = () => {
                   value={editMonitoringData.plotNo}
                   onChangeText={(text) => setEditMonitoringData({ ...editMonitoringData, plotNo: text })}
                   placeholder="Enter Plot No"
+                  editable={!isLoading}
                 />
 
                 <View style={styles.buttonRow}>
-                  <EasyButton medium primary onPress={updateMonitoring}>
+                  <EasyButton medium primary onPress={updateMonitoring} disabled={isLoading}>
                     <Text style={{ color: "white", fontWeight: "bold" }}>Save</Text>
                   </EasyButton>
-                  <EasyButton medium style={styles.cancelButton} onPress={handleModalClose}>
+                  <EasyButton medium style={styles.cancelButton} onPress={handleModalClose} disabled={isLoading}>
                     <Text style={{ color: "white", fontWeight: "bold" }}>Cancel</Text>
                   </EasyButton>
                 </View>
@@ -729,12 +840,24 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderRadius: 5,
   },
-  uploadButton: {
+  addImageIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#eee",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#bbb",
+  },
+  uploadButton: { // legacy, not used anymore
     padding: 10,
     backgroundColor: '#ddd',
     borderRadius: 5,
   },
-  uploadText: {
+  uploadText: { // legacy, not used anymore
     fontSize: 16,
     color: '#555',
   },
@@ -745,6 +868,48 @@ const styles = StyleSheet.create({
   imageLabel: {
     fontWeight: "bold",
     marginBottom: 5,
+  },
+  loaderOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10000,
+  },
+  // Modern Custom Action Sheet
+  actionSheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.22)",
+    justifyContent: "flex-end",
+  },
+  actionSheetContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+  },
+  actionSheetTitle: {
+    fontSize: 17,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 8,
+    color: "#333",
+  },
+  actionSheetButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 13,
+    paddingHorizontal: 8,
+  },
+  actionSheetButtonText: {
+    fontSize: 16,
+    color: "#1F2937",
   },
 });
 

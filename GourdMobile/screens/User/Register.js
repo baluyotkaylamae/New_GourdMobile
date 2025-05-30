@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Dimensions, Modal, ActivityIndicator } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import EasyButton from "../../Shared/StyledComponents/EasyButton";
 import InputUser from "../../Shared/Form/InputUser";
@@ -44,6 +44,9 @@ const Register = () => {
     const navigation = useNavigation();
     const [fieldErrors, setFieldErrors] = useState(initialFieldErrors);
 
+    // Loader state
+    const [isLoading, setIsLoading] = useState(false);
+
     useEffect(() => {
         (async () => {
             const { status } = await Camera.requestCameraPermissionsAsync();
@@ -52,6 +55,7 @@ const Register = () => {
     }, []);
 
     const pickImage = async () => {
+        if (isLoading) return;
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
             alert("Permission to access camera roll is required!");
@@ -68,6 +72,7 @@ const Register = () => {
     };
 
     const takePhoto = async () => {
+        if (isLoading) return;
         if (hasCameraPermission === null) {
             alert("Camera permission is needed.");
             return;
@@ -147,7 +152,9 @@ const Register = () => {
 
         setFieldErrors(errors);
 
-        if (hasError) return; // Clear error if all validations pass
+        if (hasError) return; // Don't show loader if validation fails
+
+        setIsLoading(true); // Show loader only after validation passes
 
         const formData = new FormData();
         if (image) {
@@ -177,6 +184,7 @@ const Register = () => {
         axios
             .post(`${baseURL}users/register`, formData, config)
             .then((res) => {
+                setIsLoading(false);
                 if (res.status === 201) {
                     Toast.show({
                         topOffset: 60,
@@ -184,19 +192,20 @@ const Register = () => {
                         text1: "Registration Succeeded",
                         text2: "Please Login into your account",
                     });
-                    setEmail(""); setName(""); setPhone(""); setStreet(""); setApartment(""); setZip(""); setCity(""); setCountry(""); setPassword(""); setImage(null);
+                    setEmail(""); setName(""); setPhone(""); setStreet(""); setApartment(""); setZip(""); setCity(""); setCountry(""); setPassword(""); setConfirmPassword(""); setImage(null);
                     setTimeout(() => {
                         navigation.navigate("Login");
                     }, 500);
                 }
             })
             .catch((error) => {
+                setIsLoading(false);
                 Toast.show({
                     position: 'bottom',
                     bottomOffset: 20,
                     type: "error",
                     text1: "Something went wrong",
-                    text2: "Please try again",
+                    text2: error.response?.data?.message || "Please try again",
                 });
             });
     };
@@ -205,135 +214,162 @@ const Register = () => {
     const AVATAR = Math.min(width * 0.38, 160);
 
     return (
-        <ScrollView style={{ backgroundColor: "#fff" }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-            <View style={styles.card}>
-                {/* Avatar inside card, above Personal Info */}
-                <View style={styles.avatarSection}>
-                    <TouchableOpacity style={[styles.avatarContainer, { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 }]} onPress={pickImage} activeOpacity={0.85}>
-                        {image ? (
-                            <Image style={[styles.avatar, { width: AVATAR - 6, height: AVATAR - 6, borderRadius: (AVATAR - 6) / 2 }]} source={{ uri: image }} />
-                        ) : (
-                            <View style={[styles.avatarPlaceholder, { width: AVATAR - 6, height: AVATAR - 6, borderRadius: (AVATAR - 6) / 2 }]}>
-                                <Icon name="user" size={Math.max(AVATAR * 0.32, 36)} color="#bdbdbd" />
-                                <Text style={styles.addPhotoText}>Add Photo</Text>
-                            </View>
-                        )}
-                        <TouchableOpacity style={styles.cameraButton} onPress={takePhoto}>
-                            <Icon name="camera" size={Math.max(AVATAR * 0.15, 16)} color="#fff" />
+        <View style={{flex: 1}}>
+            {/* Loader Modal */}
+            <Modal
+                visible={isLoading}
+                transparent
+                animationType="fade"
+                onRequestClose={() => {}} // disables back button
+            >
+                <View style={styles.loaderOverlay}>
+                    <ActivityIndicator size="large" color="#3baea0" />
+                    <Text style={{marginTop: 15, color: "#333"}}>Creating your account...</Text>
+                </View>
+            </Modal>
+
+            <ScrollView style={{ backgroundColor: "#fff" }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} scrollEnabled={!isLoading}>
+                <View style={styles.card}>
+                    {/* Avatar inside card, above Personal Info */}
+                    <View style={styles.avatarSection}>
+                        <TouchableOpacity style={[styles.avatarContainer, { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 }]} onPress={pickImage} activeOpacity={0.85} disabled={isLoading}>
+                            {image ? (
+                                <Image style={[styles.avatar, { width: AVATAR - 6, height: AVATAR - 6, borderRadius: (AVATAR - 6) / 2 }]} source={{ uri: image }} />
+                            ) : (
+                                <View style={[styles.avatarPlaceholder, { width: AVATAR - 6, height: AVATAR - 6, borderRadius: (AVATAR - 6) / 2 }]}>
+                                    <Icon name="user" size={Math.max(AVATAR * 0.32, 36)} color="#bdbdbd" />
+                                    <Text style={styles.addPhotoText}>Add Photo</Text>
+                                </View>
+                            )}
+                            <TouchableOpacity style={styles.cameraButton} onPress={takePhoto} disabled={isLoading}>
+                                <Icon name="camera" size={Math.max(AVATAR * 0.15, 16)} color="#fff" />
+                            </TouchableOpacity>
                         </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.sectionLabel}>Personal Info</Text>
+                        <InputUser
+                            placeholder="Email Address"
+                            placeholderTextColor="#bdbdbd"
+                            style={styles.input}
+                            value={email}
+                            onChangeText={(text) => { setEmail(text.toLowerCase()); setFieldErrors({ ...fieldErrors, email: "" }); }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.email ? <Text style={styles.fieldError}>{fieldErrors.email}</Text> : null}
+                        <InputUser
+                            placeholder="Full Name"
+                            style={styles.input}
+                            value={name}
+                            onChangeText={(text) => { setName(text); setFieldErrors({ ...fieldErrors, name: "" }); }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.name ? <Text style={styles.fieldError}>{fieldErrors.name}</Text> : null}
+                        <InputUser
+                            placeholder="Phone Number"
+                            keyboardType="numeric"
+                            style={styles.input}
+                            value={phone}
+                            onChangeText={(text) => { setPhone(text); setFieldErrors({ ...fieldErrors, phone: "" }); }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.phone ? <Text style={styles.fieldError}>{fieldErrors.phone}</Text> : null}
+                        <InputUser
+                            placeholder="Password"
+                            secureTextEntry={true}
+                            style={styles.input}
+                            value={password}
+                            onChangeText={(text) => { setPassword(text); setFieldErrors({ ...fieldErrors, password: "" }); }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.password ? <Text style={styles.fieldError}>{fieldErrors.password}</Text> : null}
+                        <InputUser
+                            placeholder="Confirm Password"
+                            secureTextEntry={true}
+                            style={styles.input}
+                            value={confirmPassword}
+                            onChangeText={(text) => {
+                                setConfirmPassword(text);
+                                setFieldErrors({ ...fieldErrors, confirmPassword: "" });
+                            }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.confirmPassword ? (
+                            <Text style={styles.fieldError}>{fieldErrors.confirmPassword}</Text>
+                        ) : null}
+                    </View>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.sectionLabel}>Address</Text>
+                        <InputUser
+                            placeholder="Street"
+                            style={styles.input}
+                            value={street}
+                            onChangeText={(text) => { setStreet(text); setFieldErrors({ ...fieldErrors, street: "" }); }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.street ? <Text style={styles.fieldError}>{fieldErrors.street}</Text> : null}
+                        <InputUser
+                            placeholder="Apartment/Unit"
+                            style={styles.input}
+                            value={apartment}
+                            onChangeText={(text) => { setApartment(text); setFieldErrors({ ...fieldErrors, apartment: "" }); }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.apartment ? <Text style={styles.fieldError}>{fieldErrors.apartment}</Text> : null}
+
+                        <InputUser
+                            placeholder="Zip"
+                            keyboardType="numeric"
+                            style={[styles.input, { marginBottom: 0 }]}
+                            value={zip}
+                            onChangeText={(text) => { setZip(text); setFieldErrors({ ...fieldErrors, zip: "" }); }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.zip ? <Text style={styles.fieldError}>{fieldErrors.zip}</Text> : null}
+
+                        <InputUser
+                            placeholder="City"
+                            style={[styles.input, { marginBottom: 0 }]}
+                            value={city}
+                            onChangeText={(text) => { setCity(text); setFieldErrors({ ...fieldErrors, city: "" }); }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.city ? <Text style={styles.fieldError}>{fieldErrors.city}</Text> : null}
+
+                        <InputUser
+                            placeholder="Country"
+                            style={styles.input}
+                            value={country}
+                            onChangeText={(text) => { setCountry(text); setFieldErrors({ ...fieldErrors, country: "" }); }}
+                            editable={!isLoading}
+                        />
+                        {fieldErrors.country ? <Text style={styles.fieldError}>{fieldErrors.country}</Text> : null}
+                    </View>
+                    <View style={styles.buttonGroup}>
+                        {error ? <Error message={error} style={styles.error} /> : null}
+                        <EasyButton
+                            login
+                            primary
+                            onPress={register}
+                            style={styles.registerButton}
+                            disabled={isLoading}
+                        >
+                            <Text style={styles.registerButtonText}>Create Account</Text>
+                        </EasyButton>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.loginLink}
+                        onPress={() => navigation.navigate("Login")}
+                        disabled={isLoading}
+                    >
+                        <Text style={styles.loginText}>
+                            Already have an account? <Text style={styles.loginHighlight}>Log In</Text>
+                        </Text>
                     </TouchableOpacity>
                 </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.sectionLabel}>Personal Info</Text>
-                    <InputUser
-                        placeholder="Email Address"
-                        placeholderTextColor="#bdbdbd"
-                        style={styles.input}
-                        value={email}
-                        onChangeText={(text) => { setEmail(text.toLowerCase()); setFieldErrors({ ...fieldErrors, email: "" }); }}
-                    />
-                    {fieldErrors.email ? <Text style={styles.fieldError}>{fieldErrors.email}</Text> : null}
-                    <InputUser
-                        placeholder="Full Name"
-                        style={styles.input}
-                        value={name}
-                        onChangeText={(text) => { setName(text); setFieldErrors({ ...fieldErrors, name: "" }); }}
-                    />
-                    {fieldErrors.name ? <Text style={styles.fieldError}>{fieldErrors.name}</Text> : null}
-                    <InputUser
-                        placeholder="Phone Number"
-                        keyboardType="numeric"
-                        style={styles.input}
-                        value={phone}
-                        onChangeText={(text) => { setPhone(text); setFieldErrors({ ...fieldErrors, phone: "" }); }}
-                    />
-                    {fieldErrors.phone ? <Text style={styles.fieldError}>{fieldErrors.phone}</Text> : null}
-                    <InputUser
-                        placeholder="Password"
-                        secureTextEntry={true}
-                        style={styles.input}
-                        value={password}
-                        onChangeText={(text) => { setPassword(text); setFieldErrors({ ...fieldErrors, password: "" }); }}
-                    />
-                    {fieldErrors.password ? <Text style={styles.fieldError}>{fieldErrors.password}</Text> : null}
-                    <InputUser
-                        placeholder="Confirm Password"
-                        secureTextEntry={true}
-                        style={styles.input}
-                        value={confirmPassword}
-                        onChangeText={(text) => {
-                            setConfirmPassword(text);
-                            setFieldErrors({ ...fieldErrors, confirmPassword: "" });
-                        }}
-                    />
-                    {fieldErrors.confirmPassword ? (
-                        <Text style={styles.fieldError}>{fieldErrors.confirmPassword}</Text>
-                    ) : null}
-                </View>
-                <View style={styles.inputGroup}>
-                    <Text style={styles.sectionLabel}>Address</Text>
-                    <InputUser
-                        placeholder="Street"
-                        style={styles.input}
-                        value={street}
-                        onChangeText={(text) => { setStreet(text); setFieldErrors({ ...fieldErrors, street: "" }); }}
-                    />
-                    {fieldErrors.street ? <Text style={styles.fieldError}>{fieldErrors.street}</Text> : null}
-                    <InputUser
-                        placeholder="Apartment/Unit"
-                        style={styles.input}
-                        value={apartment}
-                        onChangeText={(text) => { setApartment(text); setFieldErrors({ ...fieldErrors, apartment: "" }); }}
-                    />
-                    {fieldErrors.apartment ? <Text style={styles.fieldError}>{fieldErrors.apartment}</Text> : null}
-
-                    <InputUser
-                        placeholder="Zip"
-                        keyboardType="numeric"
-                        style={[styles.input, { marginBottom: 0 }]}
-                        value={zip}
-                        onChangeText={(text) => { setZip(text); setFieldErrors({ ...fieldErrors, zip: "" }); }}
-                    />
-                    {fieldErrors.zip ? <Text style={styles.fieldError}>{fieldErrors.zip}</Text> : null}
-
-                    <InputUser
-                        placeholder="City"
-                        style={[styles.input, { marginBottom: 0 }]}
-                        value={city}
-                        onChangeText={(text) => { setCity(text); setFieldErrors({ ...fieldErrors, city: "" }); }}
-                    />
-                    {fieldErrors.city ? <Text style={styles.fieldError}>{fieldErrors.city}</Text> : null}
-
-                    <InputUser
-                        placeholder="Country"
-                        style={styles.input}
-                        value={country}
-                        onChangeText={(text) => { setCountry(text); setFieldErrors({ ...fieldErrors, country: "" }); }}
-                    />
-                    {fieldErrors.country ? <Text style={styles.fieldError}>{fieldErrors.country}</Text> : null}
-                </View>
-                <View style={styles.buttonGroup}>
-                    {error ? <Error message={error} style={styles.error} /> : null}
-                    <EasyButton
-                        login
-                        primary
-                        onPress={register}
-                        style={styles.registerButton}
-                    >
-                        <Text style={styles.registerButtonText}>Create Account</Text>
-                    </EasyButton>
-                </View>
-                <TouchableOpacity
-                    style={styles.loginLink}
-                    onPress={() => navigation.navigate("Login")}
-                >
-                    <Text style={styles.loginText}>
-                        Already have an account? <Text style={styles.loginHighlight}>Log In</Text>
-                    </Text>
-                </TouchableOpacity>
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </View>
     );
 };
 
@@ -475,6 +511,13 @@ const styles = StyleSheet.create({
         marginBottom: 6,
         marginLeft: 2,
         paddingLeft: 10,
+    },
+    loaderOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.22)",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 10000,
     },
 });
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, TextInput, Button, Image, ScrollView } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, TextInput, Button, Image, ScrollView, Pressable } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../assets/common/baseurl';
@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import mime from "mime";
 import DropDownPicker from 'react-native-dropdown-picker';
+import Icon from "react-native-vector-icons/FontAwesome";
 
 const MonitoringTab = ({ data, onUpdate, onupdate }) => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -183,15 +184,18 @@ const PastMonitoring = () => {
   const [updatePollinatedImages, setupdatePollinatedImages] = useState([]);
   const [updateHarvestedImages, setupdateHarvestedImages] = useState([]);
 
+  // Add for modern action sheet and loading
+  const [imageActionSheetVisible, setImageActionSheetVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const fetchMonitoringData = async () => {
     setLoading(true);
     try {
       const storedToken = await AsyncStorage.getItem("jwt");
       const userId = context.stateUser?.user?.userId;
-      const response = await axios.get(`${baseURL}Monitoring`, {
+      const response = await axios.get(`${baseURL}Monitoring/${userId}`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
-      // console.log("Fetched monitoring data:", response.data);
 
       const today = new Date();
       const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
@@ -225,6 +229,7 @@ const PastMonitoring = () => {
 
   const onUpdate = async (id, fruitsHarvested) => {
     try {
+      setIsLoading(true);
       const storedToken = await AsyncStorage.getItem("jwt");
       await axios.put(
         `${baseURL}Monitoring/${id}`,
@@ -236,6 +241,8 @@ const PastMonitoring = () => {
       fetchMonitoringData();
     } catch (error) {
       console.error("Error updating monitoring data:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -248,23 +255,56 @@ const PastMonitoring = () => {
     setupdateModalVisible(true);
   };
 
+  // Modern custom action sheet for image picking
+  const openImageActionSheet = () => setImageActionSheetVisible(true);
+  const closeImageActionSheet = () => setImageActionSheetVisible(false);
+
+  // Modern camera/gallery picker
   const pickImage = async (type) => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      if (type === 'pollinated') {
-        setupdatePollinatedImages(prev => [...prev, result.assets[0].uri]);
-      } else {
-        // Limit: do not allow more harvested images than pollinated flowers
-        if (updateData && updateHarvestedImages.length >= updateData.pollinatedFlowers) {
-          alert("You cannot add more harvested fruit images than pollinated flowers.");
+    closeImageActionSheet();
+    setIsLoading(true);
+    try {
+      if (type === "camera") {
+        const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!cameraPerm.granted) {
+          alert("Camera permission denied");
           return;
         }
-        setupdateHarvestedImages(prev => [...prev, result.assets[0].uri]);
+        let result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          // Limit: do not allow more harvested images than pollinated flowers
+          if (updateData && updateHarvestedImages.length >= updateData.pollinatedFlowers) {
+            alert("You cannot add more harvested fruit images than pollinated flowers.");
+            return;
+          }
+          setupdateHarvestedImages(prev => [...prev, result.assets[0].uri]);
+        }
+      } else if (type === "gallery") {
+        const libraryPerm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!libraryPerm.granted) {
+          alert("Media library permission denied");
+          return;
+        }
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          // Limit: do not allow more harvested images than pollinated flowers
+          if (updateData && updateHarvestedImages.length >= updateData.pollinatedFlowers) {
+            alert("You cannot add more harvested fruit images than pollinated flowers.");
+            return;
+          }
+          setupdateHarvestedImages(prev => [...prev, result.assets[0].uri]);
+        }
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -274,6 +314,8 @@ const PastMonitoring = () => {
       alert("Number of harvested fruit images cannot exceed pollinated flowers.");
       return;
     }
+
+    setIsLoading(true);
 
     const storedToken = await AsyncStorage.getItem("jwt");
     let formData = new FormData();
@@ -321,6 +363,8 @@ const PastMonitoring = () => {
     } catch (error) {
       console.error("Error updating monitoring:", error);
       alert("Error updating monitoring. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -328,6 +372,19 @@ const PastMonitoring = () => {
     loading ? <ActivityIndicator size="large" color="#0000ff" /> :
       error ? <Text>{error}</Text> :
         <View style={styles.container}>
+          {/* Loading overlay for all update actions */}
+          <Modal
+            visible={isLoading}
+            transparent
+            animationType="fade"
+            onRequestClose={() => {}}
+          >
+            <View style={styles.loaderOverlay}>
+              <ActivityIndicator size="large" color="#3baea0" />
+              <Text style={{marginTop: 15, color: "#333"}}>Processing...</Text>
+            </View>
+          </Modal>
+
           {/* Removed tab buttons here */}
           {selectedTab === 'current' ? (
             <MonitoringTab data={monitoringData} onUpdate={onUpdate} onupdate={handleupdate} />
@@ -336,6 +393,31 @@ const PastMonitoring = () => {
           ) : (
             <MonitoringTab data={failedMonitoringData} onUpdate={onUpdate} onupdate={handleupdate} />
           )}
+
+          {/* Modern Custom Action Sheet for Add Image */}
+          <Modal
+            visible={imageActionSheetVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={closeImageActionSheet}
+          >
+            <Pressable style={styles.actionSheetOverlay} onPress={closeImageActionSheet}>
+              <Pressable style={styles.actionSheetContainer}>
+                <Text style={styles.actionSheetTitle}>Add Image</Text>
+                <TouchableOpacity style={styles.actionSheetButton} onPress={() => pickImage("camera")}>
+                  <Icon name="camera" size={22} color="#3baea0" style={{ marginRight: 10 }} />
+                  <Text style={styles.actionSheetButtonText}>Take Photo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionSheetButton} onPress={() => pickImage("gallery")}>
+                  <Icon name="image" size={22} color="#3baea0" style={{ marginRight: 10 }} />
+                  <Text style={styles.actionSheetButtonText}>Choose from Gallery</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.actionSheetButton, {borderTopWidth: 1, borderColor: "#eee"}]} onPress={closeImageActionSheet}>
+                  <Text style={[styles.actionSheetButtonText, { color: "#d00" }]}>Cancel</Text>
+                </TouchableOpacity>
+              </Pressable>
+            </Pressable>
+          </Modal>
 
           {/* update Modal */}
           <Modal
@@ -383,16 +465,11 @@ const PastMonitoring = () => {
                       {/* Only show the add button if limit not reached */}
                       {updateHarvestedImages.length < (updateData.pollinatedFlowerImages ? updateData.pollinatedFlowerImages.length : 0) && (
                         <TouchableOpacity
-                          style={styles.uploadButton}
-                          onPress={() => {
-                            if (updateHarvestedImages.length >= (updateData.pollinatedFlowerImages ? updateData.pollinatedFlowerImages.length : 0)) {
-                              alert("You cannot add more harvested fruit images than pollinated flowers.");
-                              return;
-                            }
-                            pickImage('harvested');
-                          }}
+                          style={styles.addImageIconButton}
+                          onPress={openImageActionSheet}
+                          disabled={isLoading}
                         >
-                          <Text style={styles.uploadText}>+ Add Image</Text>
+                          <Icon name="camera" size={28} color="#555" />
                         </TouchableOpacity>
                       )}
                     </ScrollView>
@@ -402,58 +479,12 @@ const PastMonitoring = () => {
                     <View style={styles.modalButtons}>
                       <Button
                         title="Save"
-                        onPress={async () => {
-                          if (!updateData) return;
-                          const storedToken = await AsyncStorage.getItem("jwt");
-                          let formData = new FormData();
-                          formData.append("plotNo", updatePlotNo);
-
-                          // 1. Add existing images (those with http/https) as plain values
-                          updateHarvestedImages.forEach((imageObj) => {
-                            if (typeof imageObj === 'object' && imageObj.url && imageObj.url.startsWith("http")) {
-                              formData.append("fruitHarvestedImages", JSON.stringify(imageObj));
-                            }
-                          });
-
-                          // 2. Add new images (local URIs) as files
-                          updateHarvestedImages.forEach((imageUri, index) => {
-                            const uri = typeof imageUri === 'string' ? imageUri : imageUri?.url;
-                            if (uri && !uri.startsWith("http")) {
-                              const newImageUri = `file:///${uri.split("file:/").join("")}`;
-                              formData.append("fruitHarvestedImages", {
-                                uri: newImageUri,
-                                type: mime.getType(newImageUri) || 'image/jpeg',
-                                name: `fruit_harvested_${index}.jpg`,
-                              });
-                            }
-                          });
-
-                          // If number of images == pollinatedFlowers, set status to Completed
-                          if (
-                            updateHarvestedImages.length === Number(updateData.pollinatedFlowers)
-                          ) {
-                            formData.append("status", "Completed");
-                          }
-
-                          try {
-                            const config = {
-                              headers: {
-                                "Content-Type": "multipart/form-data",
-                                Authorization: `Bearer ${storedToken}`,
-                              },
-                            };
-                            await axios.put(`${baseURL}Monitoring/${updateData._id}`, formData, config);
-                            setupdateModalVisible(false);
-                            setupdateData(null);
-                            fetchMonitoringData();
-                          } catch (error) {
-                            console.error("Error updating monitoring:", error);
-                          }
-                        }}
+                        onPress={saveupdate}
                         color="green"
+                        disabled={isLoading}
                       />
                       <View style={{ width: 10 }} />
-                      <Button title="Cancel" onPress={() => setupdateModalVisible(false)} color="red" />
+                      <Button title="Cancel" onPress={() => setupdateModalVisible(false)} color="red" disabled={isLoading} />
                     </View>
                   </>
                 )}
@@ -561,6 +592,18 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderRadius: 5,
   },
+  addImageIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#eee",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#bbb",
+  },
   uploadButton: {
     padding: 10,
     backgroundColor: '#ddd',
@@ -579,6 +622,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 5,
+    flexWrap: 'wrap',
   },
   item: {
     backgroundColor: "white",
@@ -610,27 +654,47 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 5,
   },
-  imageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    marginBottom: 10,
+  loaderOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.22)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10000,
   },
-  imagePreview: {
-    width: 80,
-    height: 80,
-    marginRight: 10,
-    borderRadius: 5,
+  // Modern Custom Action Sheet
+  actionSheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.22)",
+    justifyContent: "flex-end",
   },
-  updateButton: {
-    padding: 10,
-    backgroundColor: '#007BFF',
-    borderRadius: 5,
-    alignItems: 'center',
+  actionSheetContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
   },
-  updateButtonText: {
-    color: 'white',
+  actionSheetTitle: {
+    fontSize: 17,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 8,
+    color: "#333",
+  },
+  actionSheetButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 13,
+    paddingHorizontal: 8,
+  },
+  actionSheetButtonText: {
     fontSize: 16,
+    color: "#1F2937",
   },
 });
 

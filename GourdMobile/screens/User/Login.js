@@ -43,22 +43,19 @@ const Login = (props) => {
       email,
       password,
     };
-
+  
     if (email === "" || password === "") {
       setError("Please fill in your credentials");
     } else if (context && context.dispatch) {
       const response = await loginUser(user, context.dispatch); // Assuming loginUser returns a token
       if (response && response.token) {
         await AsyncStorage.setItem('jwt', response.token); // Store the token
-        setError('');
-      } else if (response && response.message) {
-        setError(response.message);
       }
     } else {
       console.error('Context or Dispatch is undefined');
     }
   };
-
+  
   const handleGoogleSignIn = () => {
     if (request) {
       promptAsync();
@@ -71,6 +68,7 @@ const Login = (props) => {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <FormContainer style={styles.outerContainer}>
+
         <View style={styles.formContent}>
           <Image source={appLogo} style={styles.logo} />
           <Text style={styles.cardTitle}>Sign In</Text>
@@ -113,16 +111,6 @@ const Login = (props) => {
               <Text style={styles.registerButton}>Create New Account</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.socialDivider}>
-            <View style={styles.line} />
-            <Text style={styles.middleText}>Continue with</Text>
-            <View style={styles.line} />
-          </View>
-          <View style={styles.socialRow}>
-            <TouchableOpacity onPress={handleGoogleSignIn} style={styles.googleButtonContainer}>
-              <Image source={googleLogo} style={styles.googleIcon} />
-            </TouchableOpacity>
-          </View>
         </View>
       </FormContainer>
     </KeyboardAvoidingView>
@@ -134,11 +122,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#E0F8E6",
   },
+  logoHeaderWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 48,
+    marginBottom: 15,
+    flexDirection: "column",
+  },
   logo: {
     width: 200,
     height: 200,
     borderRadius: 16,
     marginBottom: 6,
+  },
+  logoText: {
+    fontSize: 29,
+    fontWeight: "bold",
+    color: "#A4B465",
+    letterSpacing: 1.5,
+    fontFamily: 'serif',
   },
   formContent: {
     backgroundColor: "#fff",

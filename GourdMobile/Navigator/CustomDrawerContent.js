@@ -50,6 +50,10 @@ const CustomDrawerContent = (props) => {
       });
 
       await AsyncStorage.removeItem('jwt');
+
+      const tokenAfter = await AsyncStorage.getItem('jwt');
+      console.log('Token after logout:', tokenAfter); 
+      
       logoutUser(context.dispatch);
       navigation.navigate('Login');
     } catch (error) {

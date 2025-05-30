@@ -95,7 +95,7 @@ const Chatbox = ({ route }) => {
   };
 
   useEffect(() => {
-  
+
     fetchMessages();
   }, [receiverId, context.stateUser]);
 
@@ -153,16 +153,16 @@ const Chatbox = ({ route }) => {
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
-  
+
     const filteredMessage = filterBadWords(newMessage.trim());
-    
+
     // Check if the message contains filtered words
     if (filteredMessage !== newMessage.trim()) {
       // Show a warning or prevent the message from being sent
       // console.warn("Message contains inappropriate content and will not be sent.");
       return;
     }
-  
+
     const tempMessage = {
       _id: new Date().toISOString(),
       sender: { _id: context.stateUser?.user?.userId },
@@ -170,19 +170,19 @@ const Chatbox = ({ route }) => {
     };
     setMessages((prevMessages) => [...prevMessages, tempMessage]);
     setNewMessage('');
-  
+
     try {
       const storedToken = await AsyncStorage.getItem('jwt');
       const senderId = context.stateUser?.user?.userId;
-  
+
       if (!storedToken || !senderId) throw new Error('Authentication failed');
-  
+
       const messageData = {
         sender: senderId,
         user: receiverId,
         message: newMessage.trim(),
       };
-  
+
       const response = await axios.post(
         `${baseURL}chat/messages`,
         messageData,
@@ -191,42 +191,45 @@ const Chatbox = ({ route }) => {
 
       // console.log(response.data);
 
-      socket.emit('sendMessage', {...response.data.chat,userId:response.data.chat.user});
+      socket.emit('sendMessage', { ...response.data.chat, userId: response.data.chat.user });
     } catch (err) {
       // console.error('Error sending message:', err.message);
     }
   };
-  useEffect (() => {
+  useEffect(() => {
     socket.on('receiveMessage', (message) => {
       setMessages((prevMessages) => [
         ...prevMessages,
-        { ...message, message: filterBadWords(message.message) } // Filter incoming message
-      ]); 
+        { ...message, message: filterBadWords(message.message) }
+      ]);
     });
+    return () => {
+      socket.off('receiveMessage');
+    };
   }, []);
 
   const deleteMessage = async (messageId) => {
     try {
-        const storedToken = await AsyncStorage.getItem('jwt');
+      const storedToken = await AsyncStorage.getItem('jwt');
 
-        if (!storedToken) {
-            throw new Error('Authentication failed');
-        }
+      if (!storedToken) {
+        throw new Error('Authentication failed');
+      }
 
-        const response = await axios.delete(`${baseURL}chat/${messageId}`, {
-            headers: { Authorization: `Bearer ${storedToken}` },
-        });
+      const response = await axios.delete(`${baseURL}chat/${messageId}`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
 
-        if (response.data.success) {
-            // Remove the message from local state
-            setMessages((prevMessages) =>
-                prevMessages.filter((chat) => chat._id !== messageId)
-            );
-        }
+      if (response.data.success) {
+        // Remove the message from local state
+        setMessages((prevMessages) =>
+          prevMessages.filter((chat) => chat._id !== messageId)
+        );
+      }
     } catch (err) {
-        // console.error('Error deleting message:', err.message);
+      // console.error('Error deleting message:', err.message);
     }
-};
+  };
 
   const renderMessage = ({ item }) => {
     const senderId = item.sender?._id || item.sender?.id;
@@ -262,54 +265,54 @@ const Chatbox = ({ route }) => {
     );
   };
 
-return (
-  <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-    {/* Render messages */}
-    {loading ? (
-      <ActivityIndicator size="large" color="#0000ff" />
-    ) : error ? (
-      <Text style={styles.errorText}>{error}</Text>
-    ) : (
-      <FlatList
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item._id?.toString() || Math.random().toString()}
-        style={styles.messageList}
-      />
-    )}
+  return (
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Render messages */}
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : error ? (
+        <Text style={styles.errorText}>{error}</Text>
+      ) : (
+        <FlatList
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item._id?.toString() || Math.random().toString()}
+          style={styles.messageList}
+        />
+      )}
 
-    {/* Input for new messages */}
-    <View style={styles.inputContainer}>
-      <TextInput
-        style={styles.textInput}
-        value={newMessage}
-        onChangeText={setNewMessage}
-        placeholder="Type your message..."
-      />
-      <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-        <Icon name="arrow-right" size={20} color="#fff" />
-      </TouchableOpacity>
-    </View>
+      {/* Input for new messages */}
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.textInput}
+          value={newMessage}
+          onChangeText={setNewMessage}
+          placeholder="Type your message..."
+        />
+        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+          <Icon name="arrow-right" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
 
-    {/* Modal for confirmation */}
-    <Modal
-      visible={isModalVisible}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setModalVisible(false)}
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text>Do you want to delete this message?</Text>
-          <View style={styles.modalButtons}>
-            <Button title="Cancel" onPress={() => setModalVisible(false)} />
-            <Button title="Okay" onPress={confirmDeleteMessage} />
+      {/* Modal for confirmation */}
+      <Modal
+        visible={isModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text>Do you want to delete this message?</Text>
+            <View style={styles.modalButtons}>
+              <Button title="Cancel" onPress={() => setModalVisible(false)} />
+              <Button title="Okay" onPress={confirmDeleteMessage} />
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
-  </KeyboardAvoidingView>
-);
+      </Modal>
+    </KeyboardAvoidingView>
+  );
 };
 
 
