@@ -263,11 +263,11 @@ async function checkHarvestNotifications() {
             // Prepare message for each day
             let dayMessage = "";
             if (dayIndex === 0) {
-                dayMessage = "Harvest starts today!";
+                dayMessage = "Harvest starts today!\n7 days of harvesting ahead.";
             } else if (dayIndex === 6) {
                 dayMessage = "Last day to harvest!";
             } else {
-                dayMessage = `${6 - dayIndex} days left to complete harvest.`;
+                dayMessage = `${7 - dayIndex} days left to complete harvest.`;
             }
 
             // Gather harvest info
@@ -292,6 +292,10 @@ async function checkHarvestNotifications() {
             };
 
             // Send notification
+            console.log(
+                `Sending notification to user: ${user._id} (${user.email}), pushToken: ${user.pushToken}`
+            );
+
             await pushNotification(data, user.pushToken);
 
             // Update notificationStatus for this day

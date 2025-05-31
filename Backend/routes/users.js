@@ -7,7 +7,6 @@ const multer = require('multer');
 const mongoose = require('mongoose');
 const upload = require('../config/multer');
 const cloudinary = require('../config/configCloudinary');
-const { UserArchive } = require('../models/ArchiveUser');
 
 const FILE_TYPE_MAP = {
     'image/png': 'png',
@@ -17,19 +16,6 @@ const FILE_TYPE_MAP = {
 
 const storage = multer.memoryStorage();
 const uploadOptions = multer({ storage: storage });
-// Helper function to send JWT token
-function sendToken(user, statusCode, res) {
-    const secret = process.env.secret;
-    const token = jwt.sign(
-        {
-            userId: user.id,
-            isAdmin: user.isAdmin
-        },
-        secret,
-        { expiresIn: '1d' }
-    );
-    res.status(statusCode).send({ user: user.email, token });
-}
 
 // Function to update the user's online status
 async function updateOnlineStatus(userId, status) {
@@ -56,58 +42,35 @@ router.get(`/`, async (req, res) => {
     res.send(userList);
 });
 
+// Get user by ID
+router.get('/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ success: false, message: 'Invalid user ID format' });
+        }
+
+        const user = await User.findById(userId).select('-passwordHash');
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        return res.status(200).json({ success: true, user });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Internal server error', error: error.message || error });
+    }
+});
 
 // Login route
-// router.post('/login', async (req, res) => {
-//     const user = await User.findOne({ email: req.body.email });
-//     const secret = process.env.secret;
-
-//     if (!user) {
-//         return res.status(400).send('The user not found');
-//     }
-
-//     if (user && bcrypt.compareSync(req.body.password, user.passwordHash)) {
-//         const token = jwt.sign(
-//             {
-//                 userId: user.id,
-//                 isAdmin: user.isAdmin,
-//                 pushToken: user.pushToken
-//             },
-//             secret,
-//             { expiresIn: '1d' }
-//         );
-
-//         console.log("User:", user); // Log the user
-//         console.log("Secret:", secret); // Log the secret
-//         console.log("Token:", token); // Log the token
-
-//         // Update online status when user logs in
-//         await updateOnlineStatus(user.id, true);
-
-//         res.status(200).send({ user: user.email, token: token });
-//     } else {
-//         res.status(400).send('Password is incorrect!');
-//     }
-// });
-
-
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: req.body.email });
     const secret = process.env.secret;
-
-    // Check if user is in the archive
-    const archivedUser = await UserArchive.findOne({ email });
-    if (archivedUser) {
-        console.log('User is archived, login denied');
-        return res.status(403).json({ message: 'Your account has been archived. Please contact admin.' });
-    }
 
     if (!user) {
         return res.status(400).send('The user not found');
     }
 
-    if (user && bcrypt.compareSync(password, user.passwordHash)) {
+    if (user && bcrypt.compareSync(req.body.password, user.passwordHash)) {
         const token = jwt.sign(
             {
                 userId: user.id,
@@ -172,172 +135,6 @@ router.post('/register', upload.single('image'), async (req, res) => {
     }
 });
 
-router.post('/googlelogin', async (req, res) => {
-    const { response } = req.body;
-    console.log(response);
-
-    try {
-        let user = await User.findOne({ googleId: response.id });
-
-        if (!user) {
-            user = await User.create({
-                name: response.name,
-                email: response.email,
-                password: '',
-                avatar: {
-                    public_id: 'avatars/avatar-default',
-                    url: response.picture,
-                },
-                googleId: response.id
-            });
-        }
-
-        sendToken(user, 200, res);
-    } catch (error) {
-        console.error('Google login error:', error);
-        res.status(400).send('Google login failed');
-    }
-});
-
-
-// Archive a user
-router.post('/archive', upload.single('image'), async (req, res, next) => {
-    try {
-        let imageUrl = req.body.image;
-
-        if (req.file && req.file.path) {
-            try {
-                const result = await cloudinary.v2.uploader.upload(req.file.path, {
-                    folder: 'gourdify',
-                    width: 150,
-                    crop: "scale"
-                });
-                imageUrl = result.secure_url;
-            } catch (err) {
-                return res.status(500).json({ success: false, message: 'Cloudinary upload failed', error: err.message });
-            }
-        }
-
-        const { _id, ...rest } = req.body;
-
-        const userFromDb = await User.findById(_id).select('+passwordHash');
-        console.log('Fetched userFromDb:', userFromDb);
-
-        if (!userFromDb) {
-            return res.status(404).json({ success: false, message: 'User not found in main collection' });
-        }
-
-        const userarchive = new UserArchive({
-            ...rest,
-            passwordHash: userFromDb.passwordHash,
-            image: imageUrl,
-        });
-
-        await userarchive.save();
-
-        res.status(201).json({ success: true, message: "User archived successfully", userarchive });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// Get all archived users
-router.get('/archive', async (req, res) => {
-    try {
-        const userList = await UserArchive.find().select('-passwordHash');
-        if (!userList) {
-            return res.status(500).json({ success: false, message: 'Error fetching users' });
-        }
-        res.status(200).json(userList);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Server Error', error: error.message });
-    }
-});
-
-// Restore a user from archive
-router.post('/archive/restore', upload.single('image'), async (req, res) => {
-    try {
-        let imageUrl = req.body.image;
-
-        if (req.file && req.file.path) {
-            try {
-                const result = await cloudinary.v2.uploader.upload(req.file.path, {
-                    folder: 'gourdify',
-                    width: 150,
-                    crop: "scale"
-                });
-                imageUrl = result.secure_url;
-            } catch (err) {
-                return res.status(500).json({ success: false, message: 'Cloudinary upload failed', error: err.message });
-            }
-        }
-
-        const { _id, ...rest } = req.body;
-
-        const userFromDb = await UserArchive.findById(_id).select('+passwordHash');
-        console.log('Fetched userFromDb:', userFromDb);
-
-        if (!userFromDb) {
-            return res.status(404).json({ success: false, message: 'User not found in main collection' });
-        }
-
-        const userarchive = new User({
-            ...rest,
-            passwordHash: userFromDb.passwordHash,
-            image: imageUrl,
-        });
-
-        await userarchive.save();
-
-        res.status(201).json({ success: true, message: "User archived successfully", userarchive });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// Delete an archived user
-router.delete('/archive/:id', async (req, res) => {
-    const userId = req.params.id;
-
-    try {
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return res.status(400).json({ success: false, message: 'Invalid user ID format' });
-        }
-
-        const userarchive = await UserArchive.findByIdAndDelete(userId);
-        if (!userarchive) {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
-
-        res.status(200).json({ success: true, message: 'User deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        res.status(500).json({ success: false, message: 'Failed to delete user', error: error.message });
-    }
-});
-
-// Get user by ID
-router.get('/:id', async (req, res) => {
-    try {
-        const userId = req.params.id;
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return res.status(400).json({ success: false, message: 'Invalid user ID format' });
-        }
-
-        const user = await User.findById(userId).select('-passwordHash');
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
-
-        return res.status(200).json({ success: true, user });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: 'Internal server error', error: error.message || error });
-    }
-});
-
 
 router.put('/:id', upload.single('image'), async (req, res) => {
     try {
@@ -383,6 +180,32 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     }
 });
 
+router.post('/googlelogin', async (req, res) => {
+    const { response } = req.body;
+    console.log(response);
+
+    try {
+        let user = await User.findOne({ googleId: response.id });
+
+        if (!user) {
+            user = await User.create({
+                name: response.name,
+                email: response.email,
+                password: '',
+                avatar: {
+                    public_id: 'avatars/avatar-default',
+                    url: response.picture,
+                },
+                googleId: response.id
+            });
+        }
+
+        sendToken(user, 200, res);
+    } catch (error) {
+        console.error('Google login error:', error);
+        res.status(400).send('Google login failed');
+    }
+});
 
 // Delete user route
 router.delete('/:id', async (req, res) => {
@@ -427,8 +250,21 @@ router.patch('/:id/role', async (req, res) => {
     }
   });
 
+// Helper function to send JWT token
+function sendToken(user, statusCode, res) {
+    const secret = process.env.secret;
+    const token = jwt.sign(
+        {
+            userId: user.id,
+            isAdmin: user.isAdmin
+        },
+        secret,
+        { expiresIn: '1d' }
+    );
+    res.status(statusCode).send({ user: user.email, token });
+}
 
-  router.put("/update-push-token/:id", async (req, res) => {
+router.put("/update-push-token/:id", async (req, res) => {
     try {
               const { expoPushToken } = req.body;
               if (!expoPushToken) {
@@ -451,8 +287,6 @@ router.patch('/:id/role', async (req, res) => {
     }
     catch (error) {}
 })
-
-
 
 
 module.exports = router;
