@@ -391,7 +391,8 @@ router.put("/update-push-token/:id", async (req, res) => {
               if (!expoPushToken) {
                 return res.status(400).json({ message: "Push token is required" });
               }
-          
+              console.log("Updating push token for user:", req.params.id);
+              console.log("New push token:", expoPushToken);
               const user = await User.findByIdAndUpdate(
                 req.params.id,
                 { pushToken: expoPushToken },
