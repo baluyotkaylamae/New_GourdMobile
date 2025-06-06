@@ -30,7 +30,10 @@ app.use(express.json());
 app.use(authJwt());
 app.use(errorHandler);
 app.use("/public/uploads", express.static(__dirname + "/public/uploads"));
-
+app.use((req, res, next) => {
+  console.log(`[${req.method}] ${req.originalUrl}`);
+  next();
+});
 // Routes
 const usersRoutes = require("./routes/users");
 const categoryRoutes = require("./routes/categories");
@@ -52,11 +55,16 @@ app.use(`${api}/GourdType`, GourdType);
 app.use(`${api}/GourdVariety`, GourdVariety);
 app.use(`${api}/Monitoring`, Monitoring);
 app.use(`${api}/chat`, chatRoutes);
+app.use((err, req, res, next) => {
+  console.error("Global error handler:", err);
+  res.status(500).json({ message: err.message });
+});
 
 // Start the server
 const SERVER = app.listen(4000, () => {
   console.log("Server is running on http://localhost:4000");
 });
+
 
 const io = new Server(SERVER, {
   cors: {

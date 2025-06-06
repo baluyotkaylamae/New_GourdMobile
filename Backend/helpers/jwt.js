@@ -2,6 +2,10 @@ const { expressjwt: jwt } = require("express-jwt");
 
 function authJwt() {
     const secret = process.env.secret;
+    console.log("JWT Secret:", secret); // Add this line
+    if (!secret) {
+        throw new Error("JWT secret is not defined in environment variables");
+    }
     const api = process.env.API_URL;
 
     return jwt({
