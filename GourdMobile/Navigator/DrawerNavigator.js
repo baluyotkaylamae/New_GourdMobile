@@ -19,18 +19,24 @@ const DrawerNavigator = () => {
   const context = useContext(AuthGlobal);
   const isAdmin = context.stateUser && context.stateUser.user && context.stateUser.user.isAdmin;
   const [user, setUser] = useState(context.stateUser && context.stateUser.user);
+  useEffect(() => {
+    setUser(context.stateUser && context.stateUser.user);
+  }, [context.stateUser]);
 
   // console.log("User in DrawerNavigator:", user);
   useEffect(() => {
+    console.log("Registering push notifications for user:", user);
     const registerForPushNotifications = async () => {
       try {
-        await registerForPushNotificationsAsync(baseURL, user.pushToken, user.userId);
+        await registerForPushNotificationsAsync(baseURL, user?.pushToken, user?.userId);
       } catch (error) {
         console.error("Error registering for push notifications:", error);
       }
+    };
+    if (user && user.userId) {
+      registerForPushNotifications();
     }
-    registerForPushNotifications()
-  }, []);
+  }, [user]);
 
   return (
     <Drawer.Navigator

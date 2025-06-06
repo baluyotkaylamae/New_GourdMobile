@@ -19,7 +19,8 @@ export const loginUser = (user, dispatch) => {
         console.log("Login API response:", data);
         if (data && data.token) {
             const token = data.token;
-            AsyncStorage.setItem("jwt", token); // Save the token
+            AsyncStorage.setItem("jwt", token); 
+            AsyncStorage.getItem("jwt").then(saved => console.log("Saved token (from AsyncStorage):", saved)); // Line 20: Log the saved token// Save the token
             try {
                 const decoded = jwtDecode(token); // Decode the token
                 dispatch(setCurrentUser(decoded, user)); // Update the authentication state

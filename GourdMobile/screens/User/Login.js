@@ -43,19 +43,20 @@ const Login = (props) => {
       email,
       password,
     };
-  
+
     if (email === "" || password === "") {
       setError("Please fill in your credentials");
     } else if (context && context.dispatch) {
-      const response = await loginUser(user, context.dispatch); // Assuming loginUser returns a token
+      const response = await loginUser(user, context.dispatch); // <-- You must call this!
       if (response && response.token) {
         await AsyncStorage.setItem('jwt', response.token); // Store the token
+        console.log("Saved token:", response.token);        // Log the token
       }
     } else {
       console.error('Context or Dispatch is undefined');
     }
   };
-  
+
   const handleGoogleSignIn = () => {
     if (request) {
       promptAsync();
