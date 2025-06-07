@@ -160,33 +160,39 @@ cron.schedule("*/2 * * * *", async () => {
 
   try {
     // Get the current date and time
-    const currentDate = new Date();
+    const now = new Date();
 
     // Find monitoring records where:
-    // - `dateOfFinalization` is 7 or more days in the past
-    // - `status` is not "Completed" or "Failed"
+    // - status is not "Completed" or "Failed"
+    // - dateOfHarvest exists and is an array with 7 elements
     const recordsToUpdate = await Monitor.find({
-      dateOfFinalization: { $lte: new Date(currentDate.setDate(currentDate.getDate() - 7)) }, // 7 days in the past
-      status: { $nin: ["Completed", "Failed"] }, // Exclude already finalized records
+      status: { $nin: ["Completed", "Failed"] },
+      dateOfHarvest: { $exists: true, $size: 7 }
     });
 
-    // Update the status of the matching records
     for (const record of recordsToUpdate) {
-      const previousStatus = record.status; // Store the previous status
+      // Get the last date in dateOfHarvest array
+      const lastHarvestDay = record.dateOfHarvest[6];
+      if (!lastHarvestDay || !lastHarvestDay.date) continue;
 
-      if (!record.fruitsHarvested || record.fruitsHarvested === 0) {
-        record.status = "Failed"; // Set the status to 'Failed' if no fruits were harvested
-      } else if (record.fruitsHarvested >= 1) {
-        record.status = "Completed"; // Set the status to 'Completed' if fruits were harvested
+      const finalHarvestDate = new Date(lastHarvestDay.date);
+
+      // Only update if the final harvest date is in the past
+      if (finalHarvestDate <= now) {
+        const previousStatus = record.status;
+
+        if (!Array.isArray(record.fruitHarvestedImages) || record.fruitHarvestedImages.length === 0) {
+          record.status = "Failed";
+        } else if (record.fruitHarvestedImages.length >= 1) {
+          record.status = "Completed";
+        }
+
+        await record.save();
+
+        console.log(
+          `Updated monitoring record with ID: ${record._id}, Previous Status: ${previousStatus}, New Status: ${record.status}`
+        );
       }
-
-      // Save the updated record
-      await record.save();
-
-      // Log the previous and updated statuses
-      console.log(
-        `Updated monitoring record with ID: ${record._id}, Previous Status: ${previousStatus}, New Status: ${record.status}`
-      );
     }
 
     console.log("Scheduled job completed.");
