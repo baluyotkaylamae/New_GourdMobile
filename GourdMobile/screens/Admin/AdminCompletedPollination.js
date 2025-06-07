@@ -45,11 +45,11 @@ const AdminCompletedPollination = () => {
         response.data.forEach((record) => {
           if (record.status !== 'Completed') return;
 
-          const date = new Date(record.dateOfFinalization);
+          // Use createdAt or updatedAt or a specific date field for completion date
+          const date = new Date(record.updatedAt || record.createdAt || record.dateOfPollination);
           const weekYear = `${getWeekNumber(date)}-${date.getFullYear()}`;
           const plotNo = record.plotNo || 'Unknown Plot';
           const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
-          const variety = record.variety?.name || 'Unknown Variety';
 
           if (!weeklyDataMap[plotNo]) {
             weeklyDataMap[plotNo] = {};
@@ -57,39 +57,34 @@ const AdminCompletedPollination = () => {
           if (!weeklyDataMap[plotNo][gourdType]) {
             weeklyDataMap[plotNo][gourdType] = {};
           }
-          if (!weeklyDataMap[plotNo][gourdType][variety]) {
-            weeklyDataMap[plotNo][gourdType][variety] = {};
-          }
 
-          if (weeklyDataMap[plotNo][gourdType][variety][weekYear]) {
-            weeklyDataMap[plotNo][gourdType][variety][weekYear] += record.pollinatedFlowers || 0;
+          const pollinatedCount = record.pollinatedFlowerImages ? record.pollinatedFlowerImages.length : 0;
+
+          if (weeklyDataMap[plotNo][gourdType][weekYear]) {
+            weeklyDataMap[plotNo][gourdType][weekYear] += pollinatedCount;
           } else {
-            weeklyDataMap[plotNo][gourdType][variety][weekYear] = record.pollinatedFlowers || 0;
+            weeklyDataMap[plotNo][gourdType][weekYear] = pollinatedCount;
           }
         });
 
         const formattedData = Object.keys(weeklyDataMap).map((plotNo) => {
           const gourdTypesData = Object.keys(weeklyDataMap[plotNo]).map((gourdType) => {
-            const varietiesData = Object.keys(weeklyDataMap[plotNo][gourdType]).map((variety) => {
-              const plotData = Object.keys(weeklyDataMap[plotNo][gourdType][variety]).map((key) => ({
-                value: weeklyDataMap[plotNo][gourdType][variety][key],
-                dataPointText: weeklyDataMap[plotNo][gourdType][variety][key].toString(),
-                label: key
-              }));
+            const plotData = Object.keys(weeklyDataMap[plotNo][gourdType]).map((key) => ({
+              value: weeklyDataMap[plotNo][gourdType][key],
+              dataPointText: weeklyDataMap[plotNo][gourdType][key].toString(),
+              label: key
+            }));
 
-              plotData.sort((a, b) => {
-                const [weekA, yearA] = a.label.split('-');
-                const [weekB, yearB] = b.label.split('-');
+            plotData.sort((a, b) => {
+              const [weekA, yearA] = a.label.split('-');
+              const [weekB, yearB] = b.label.split('-');
 
-                return yearA === yearB
-                  ? weekA - weekB
-                  : yearA - yearB;
-              });
-
-              return { variety, data: [{ value: 0, label: '' }, ...plotData] };
+              return yearA === yearB
+                ? weekA - weekB
+                : yearA - yearB;
             });
 
-            return { gourdType, varietiesData };
+            return { gourdType, data: [{ value: 0, label: '' }, ...plotData] };
           });
 
           return { plotNo, gourdTypesData };
@@ -120,8 +115,12 @@ const AdminCompletedPollination = () => {
 
       if (Array.isArray(response.data)) {
         const completedRecords = response.data.filter(record => record.status === 'Completed');
-        const totalPollinatedFlowers = completedRecords.reduce((sum, record) => sum + (record.pollinatedFlowers || 0), 0);
-        const totalFruitsHarvested = completedRecords.reduce((sum, record) => sum + (record.fruitsHarvested || 0), 0);
+        const totalPollinatedFlowers = completedRecords.reduce(
+          (sum, record) => sum + (Array.isArray(record.pollinatedFlowerImages) ? record.pollinatedFlowerImages.length : 0), 0
+        );
+        const totalFruitsHarvested = completedRecords.reduce(
+          (sum, record) => sum + (Array.isArray(record.fruitHarvestedImages) ? record.fruitHarvestedImages.length : 0), 0
+        );
 
         const rate = totalPollinatedFlowers > 0 ? (totalFruitsHarvested / totalPollinatedFlowers) * 100 : 0;
         setSuccessRate(rate.toFixed(2));
@@ -156,39 +155,32 @@ const AdminCompletedPollination = () => {
                 <Text style={styles.subHeader}>
                   <Icon name="leaf" size={14} color="#0BA5A4" /> {gourdData.gourdType}
                 </Text>
-                {gourdData.varietiesData.map((varietyData, varietyIndex) => (
-                  <View key={varietyIndex} style={{ marginBottom: 14 }}>
-                    <Text style={styles.varietyHeader}>
-                      <Icon name="tag-outline" size={13} color="#888" /> {varietyData.variety}
-                    </Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      <View style={styles.chartContainer}>
-                        <LineChart
-                          initialSpacing={0}
-                          data={varietyData.data}
-                          spacing={44}
-                          textColor1="#0BA5A4"
-                          textShiftY={-8}
-                          textShiftX={-10}
-                          textFontSize={12}
-                          thickness={4}
-                          hideRules
-                          yAxisColor="#0BA5A4"
-                          showVerticalLines
-                          verticalLinesColor="rgba(14,164,164,0.18)"
-                          xAxisColor="#0BA5A4"
-                          color="#0BA5A4"
-                          xAxisLabelTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
-                          yAxisTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
-                          noOfSections={4}
-                          startAtZero
-                          adjustForEmptyLabel={true}
-                          width={Math.max(screenWidth, 80 + varietyData.data.length * 34)}
-                        />
-                      </View>
-                    </ScrollView>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.chartContainer}>
+                    <LineChart
+                      initialSpacing={0}
+                      data={gourdData.data}
+                      spacing={44}
+                      textColor1="#0BA5A4"
+                      textShiftY={-8}
+                      textShiftX={-10}
+                      textFontSize={12}
+                      thickness={4}
+                      hideRules
+                      yAxisColor="#0BA5A4"
+                      showVerticalLines
+                      verticalLinesColor="rgba(14,164,164,0.18)"
+                      xAxisColor="#0BA5A4"
+                      color="#0BA5A4"
+                      xAxisLabelTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
+                      yAxisTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
+                      noOfSections={4}
+                      startAtZero
+                      adjustForEmptyLabel={true}
+                      width={Math.max(screenWidth, 80 + gourdData.data.length * 34)}
+                    />
                   </View>
-                ))}
+                </ScrollView>
               </View>
             ))}
             {error && <Text style={styles.error}>{error}</Text>}
@@ -260,13 +252,6 @@ const styles = StyleSheet.create({
     color: '#0BA5A4',
     marginTop: 2,
     marginLeft: 9,
-  },
-  varietyHeader: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#888',
-    marginBottom: 3,
-    marginLeft: 16
   },
   chartContainer: {
     paddingVertical: 6,

@@ -42,7 +42,6 @@ const WeeklyPollinationAdmin = () => {
           const weekYear = `Week ${weekNumber} ${year}`;
           const plotNo = record.plotNo || 'Unknown Plot';
           const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
-          const variety = record.variety?.name || 'Unknown Variety';
 
           if (!weeklyDataMap[plotNo]) {
             weeklyDataMap[plotNo] = {};
@@ -52,39 +51,31 @@ const WeeklyPollinationAdmin = () => {
             weeklyDataMap[plotNo][gourdType] = {};
           }
 
-          if (!weeklyDataMap[plotNo][gourdType][variety]) {
-            weeklyDataMap[plotNo][gourdType][variety] = {};
-          }
-
-          if (weeklyDataMap[plotNo][gourdType][variety][weekYear]) {
-            weeklyDataMap[plotNo][gourdType][variety][weekYear] += record.pollinatedFlowers || 0;
+          const pollinatedCount = record.pollinatedFlowerImages ? record.pollinatedFlowerImages.length : 0;
+          if (weeklyDataMap[plotNo][gourdType][weekYear]) {
+            weeklyDataMap[plotNo][gourdType][weekYear] += pollinatedCount;
           } else {
-            weeklyDataMap[plotNo][gourdType][variety][weekYear] = record.pollinatedFlowers || 0;
-          }
-        });
+            weeklyDataMap[plotNo][gourdType][weekYear] = pollinatedCount;
+          }        });
 
         const formattedData = Object.keys(weeklyDataMap).map((plotNo) => {
           const gourdTypesData = Object.keys(weeklyDataMap[plotNo]).map((gourdType) => {
-            const varietiesData = Object.keys(weeklyDataMap[plotNo][gourdType]).map((variety) => {
-              const plotData = Object.keys(weeklyDataMap[plotNo][gourdType][variety]).map((key, index) => ({
-                value: weeklyDataMap[plotNo][gourdType][variety][key],
-                label: key,
-                frontColor: getBarColor(index),
-              }));
+            const plotData = Object.keys(weeklyDataMap[plotNo][gourdType]).map((key, index) => ({
+              value: weeklyDataMap[plotNo][gourdType][key],
+              label: key,
+              frontColor: getBarColor(index),
+            }));
 
-              plotData.sort((a, b) => {
-                const [weekA, yearA] = a.label.split(' ').slice(1);
-                const [weekB, yearB] = b.label.split(' ').slice(1);
+            plotData.sort((a, b) => {
+              const [weekA, yearA] = a.label.split(' ').slice(1);
+              const [weekB, yearB] = b.label.split(' ').slice(1);
 
-                return yearA === yearB
-                  ? weekA - weekB
-                  : yearA - yearB;
-              });
-
-              return { variety, data: plotData };
+              return yearA === yearB
+                ? weekA - weekB
+                : yearA - yearB;
             });
 
-            return { gourdType, varietiesData };
+            return { gourdType, data: plotData };
           });
 
           return { plotNo, gourdTypesData };
@@ -133,32 +124,25 @@ const WeeklyPollinationAdmin = () => {
                 <Text style={styles.subHeader}>
                   <Icon name="leaf" size={14} color="#0BA5A4" /> {gourdData.gourdType}
                 </Text>
-                {gourdData.varietiesData.map((varietyData, varietyIndex) => (
-                  <View key={varietyIndex} style={{ marginBottom: 14 }}>
-                    <Text style={styles.varietyHeader}>
-                      <Icon name="tag-outline" size={13} color="#888" /> {varietyData.variety}
-                    </Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      <View style={styles.chartContainer}>
-                        <BarChart
-                          data={varietyData.data}
-                          barWidth={30}
-                          barBorderRadius={8}
-                          yAxisColor="#0BA5A4"
-                          xAxisColor="#0BA5A4"
-                          xAxisLabelTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
-                          yAxisTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
-                          noOfSections={4}
-                          width={Math.max(screenWidth, 80 + varietyData.data.length * 40)}
-                          hideRules
-                          showVerticalLines
-                          verticalLinesColor="rgba(14,164,164,0.13)"
-                          isAnimated
-                        />
-                      </View>
-                    </ScrollView>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.chartContainer}>
+                    <BarChart
+                      data={gourdData.data}
+                      barWidth={30}
+                      barBorderRadius={8}
+                      yAxisColor="#0BA5A4"
+                      xAxisColor="#0BA5A4"
+                      xAxisLabelTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
+                      yAxisTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
+                      noOfSections={4}
+                      width={Math.max(screenWidth, 80 + gourdData.data.length * 40)}
+                      hideRules
+                      showVerticalLines
+                      verticalLinesColor="rgba(14,164,164,0.13)"
+                      isAnimated
+                    />
                   </View>
-                ))}
+                </ScrollView>
               </View>
             ))}
             {error && <Text style={styles.error}>{error}</Text>}
@@ -214,13 +198,6 @@ const styles = StyleSheet.create({
     color: '#0BA5A4',
     marginTop: 2,
     marginLeft: 9,
-  },
-  varietyHeader: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#888',
-    marginBottom: 3,
-    marginLeft: 16
   },
   chartContainer: {
     paddingVertical: 6,

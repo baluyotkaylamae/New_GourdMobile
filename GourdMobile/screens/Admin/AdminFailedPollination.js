@@ -43,11 +43,11 @@ const FailedPollinationAdmin = () => {
         response.data.forEach((record) => {
           if (record.status !== 'Failed') return;
 
-          const date = new Date(record.dateOfFinalization);
+          // Use updatedAt or createdAt or a specific date field for failure date
+          const date = new Date(record.updatedAt || record.createdAt || record.dateOfPollination);
           const weekYear = `${getWeekNumber(date)}-${date.getFullYear()}`;
           const plotNo = record.plotNo || 'Unknown Plot';
           const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
-          const variety = record.variety?.name || 'Unknown Variety';
 
           if (!failedDataMap[plotNo]) {
             failedDataMap[plotNo] = {};
@@ -55,38 +55,33 @@ const FailedPollinationAdmin = () => {
           if (!failedDataMap[plotNo][gourdType]) {
             failedDataMap[plotNo][gourdType] = {};
           }
-          if (!failedDataMap[plotNo][gourdType][variety]) {
-            failedDataMap[plotNo][gourdType][variety] = {};
-          }
 
-          if (failedDataMap[plotNo][gourdType][variety][weekYear]) {
-            failedDataMap[plotNo][gourdType][variety][weekYear] += record.pollinatedFlowers || 0;
+          const pollinatedCount = Array.isArray(record.pollinatedFlowerImages) ? record.pollinatedFlowerImages.length : 0;
+
+          if (failedDataMap[plotNo][gourdType][weekYear]) {
+            failedDataMap[plotNo][gourdType][weekYear] += pollinatedCount;
           } else {
-            failedDataMap[plotNo][gourdType][variety][weekYear] = record.pollinatedFlowers || 0;
+            failedDataMap[plotNo][gourdType][weekYear] = pollinatedCount;
           }
         });
 
         const formattedData = Object.keys(failedDataMap).map((plotNo) => {
           const gourdTypesData = Object.keys(failedDataMap[plotNo]).map((gourdType) => {
-            const varietiesData = Object.keys(failedDataMap[plotNo][gourdType]).map((variety) => {
-              const plotData = Object.keys(failedDataMap[plotNo][gourdType][variety]).map((key) => ({
-                value: failedDataMap[plotNo][gourdType][variety][key],
-                dataPointText: failedDataMap[plotNo][gourdType][variety][key].toString(),
-                label: key
-              }));
+            const plotData = Object.keys(failedDataMap[plotNo][gourdType]).map((key) => ({
+              value: failedDataMap[plotNo][gourdType][key],
+              dataPointText: failedDataMap[plotNo][gourdType][key].toString(),
+              label: key
+            }));
 
-              plotData.sort((a, b) => {
-                const [weekA, yearA] = a.label.split('-');
-                const [weekB, yearB] = b.label.split('-');
-                return yearA === yearB
-                  ? weekA - weekB
-                  : yearA - yearB;
-              });
-
-              return { variety, data: [{ value: 0, label: '' }, ...plotData] };
+            plotData.sort((a, b) => {
+              const [weekA, yearA] = a.label.split('-');
+              const [weekB, yearB] = b.label.split('-');
+              return yearA === yearB
+                ? weekA - weekB
+                : yearA - yearB;
             });
 
-            return { gourdType, varietiesData };
+            return { gourdType, data: [{ value: 0, label: '' }, ...plotData] };
           });
 
           return { plotNo, gourdTypesData };
@@ -124,39 +119,32 @@ const FailedPollinationAdmin = () => {
                 <Text style={styles.subHeader}>
                   <Icon name="leaf" size={14} color="#ff6347" /> {gourdData.gourdType}
                 </Text>
-                {gourdData.varietiesData.map((varietyData, varietyIndex) => (
-                  <View key={varietyIndex} style={{ marginBottom: 14 }}>
-                    <Text style={styles.varietyHeader}>
-                      <Icon name="tag-outline" size={13} color="#888" /> {varietyData.variety}
-                    </Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      <View style={styles.chartContainer}>
-                        <LineChart
-                          initialSpacing={0}
-                          data={varietyData.data}
-                          spacing={44}
-                          textColor1="#ff6347"
-                          textShiftY={-8}
-                          textShiftX={-10}
-                          textFontSize={12}
-                          thickness={4}
-                          hideRules
-                          yAxisColor="#ff6347"
-                          showVerticalLines
-                          verticalLinesColor="rgba(255,99,71,0.18)"
-                          xAxisColor="#ff6347"
-                          color="#ff6347"
-                          xAxisLabelTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
-                          yAxisTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
-                          noOfSections={4}
-                          startAtZero
-                          adjustForEmptyLabel={true}
-                          width={Math.max(screenWidth, 80 + varietyData.data.length * 34)}
-                        />
-                      </View>
-                    </ScrollView>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.chartContainer}>
+                    <LineChart
+                      initialSpacing={0}
+                      data={gourdData.data}
+                      spacing={44}
+                      textColor1="#ff6347"
+                      textShiftY={-8}
+                      textShiftX={-10}
+                      textFontSize={12}
+                      thickness={4}
+                      hideRules
+                      yAxisColor="#ff6347"
+                      showVerticalLines
+                      verticalLinesColor="rgba(255,99,71,0.18)"
+                      xAxisColor="#ff6347"
+                      color="#ff6347"
+                      xAxisLabelTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
+                      yAxisTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
+                      noOfSections={4}
+                      startAtZero
+                      adjustForEmptyLabel={true}
+                      width={Math.max(screenWidth, 80 + (Array.isArray(gourdData.data) ? gourdData.data.length : 0) * 34)}
+                    />
                   </View>
-                ))}
+                </ScrollView>
               </View>
             ))}
             {error && <Text style={styles.error}>{error}</Text>}
@@ -212,13 +200,6 @@ const styles = StyleSheet.create({
     color: '#ff6347',
     marginTop: 2,
     marginLeft: 9,
-  },
-  varietyHeader: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#888',
-    marginBottom: 3,
-    marginLeft: 16
   },
   chartContainer: {
     paddingVertical: 6,

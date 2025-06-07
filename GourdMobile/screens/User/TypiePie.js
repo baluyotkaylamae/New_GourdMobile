@@ -42,14 +42,14 @@ const TypiePie = () => {
         const gourdTypesMap = {};
 
         response.data.forEach((record) => {
-          const gourdType = record.gourdType?.name;
-          const pollinatedFlowers = record.pollinatedFlowers || 0;
+          const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
+          const pollinatedCount = Array.isArray(record.pollinatedFlowerImages) ? record.pollinatedFlowerImages.length : 0;
 
-          if (pollinatedFlowers > 0) {
+          if (pollinatedCount > 0) {
             if (gourdTypesMap[gourdType]) {
-              gourdTypesMap[gourdType] += pollinatedFlowers;
+              gourdTypesMap[gourdType] += pollinatedCount;
             } else {
-              gourdTypesMap[gourdType] = pollinatedFlowers;
+              gourdTypesMap[gourdType] = pollinatedCount;
             }
           }
         });

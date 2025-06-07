@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Dimensions, StyleSheet, ScrollView, Text } from 'react-native';
 import { Card } from 'react-native-paper';
-import { LineChart } from 'react-native-gifted-charts'; // Using LineChart for lollipop chart
+import { LineChart } from 'react-native-gifted-charts';
 import axios from 'axios';
 import baseURL from '../../assets/common/baseurl';
 import AuthGlobal from '../../Context/Store/AuthGlobal';
@@ -44,12 +44,11 @@ const FailedPollination = () => {
         response.data.forEach((record) => {
           if (record.status !== 'Failed') return;
 
-          const date = new Date(record.dateOfFinalization);
-          const weekStart = new Date(date.setDate(date.getDate() - date.getDay())); // Start of the week (Sunday)
+          const date = new Date(record.dateOfFinalization || record.updatedAt || record.createdAt || record.dateOfPollination);
+          const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
           const weekLabel = `${weekStart.getDate()}/${weekStart.getMonth() + 1}/${weekStart.getFullYear()}`;
           const plotNo = record.plotNo || 'Unknown Plot';
           const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
-          const variety = record.variety?.name || 'Unknown Variety';
 
           if (!failedDataMap[plotNo]) {
             failedDataMap[plotNo] = {};
@@ -59,32 +58,26 @@ const FailedPollination = () => {
             failedDataMap[plotNo][gourdType] = {};
           }
 
-          if (!failedDataMap[plotNo][gourdType][variety]) {
-            failedDataMap[plotNo][gourdType][variety] = {};
-          }
+          const pollinatedCount = Array.isArray(record.pollinatedFlowerImages) ? record.pollinatedFlowerImages.length : 0;
 
-          if (failedDataMap[plotNo][gourdType][variety][weekLabel]) {
-            failedDataMap[plotNo][gourdType][variety][weekLabel] += record.pollinatedFlowers || 0;
+          if (failedDataMap[plotNo][gourdType][weekLabel]) {
+            failedDataMap[plotNo][gourdType][weekLabel] += pollinatedCount;
           } else {
-            failedDataMap[plotNo][gourdType][variety][weekLabel] = record.pollinatedFlowers || 0;
+            failedDataMap[plotNo][gourdType][weekLabel] = pollinatedCount;
           }
         });
 
         const formattedData = Object.keys(failedDataMap).map((plotNo) => {
           const gourdTypesData = Object.keys(failedDataMap[plotNo]).map((gourdType) => {
-            const varietiesData = Object.keys(failedDataMap[plotNo][gourdType]).map((variety) => {
-              const plotData = Object.keys(failedDataMap[plotNo][gourdType][variety]).map((key) => ({
-                value: failedDataMap[plotNo][gourdType][variety][key],
-                dataPointText: failedDataMap[plotNo][gourdType][variety][key].toString(),
-                label: key,
-              }));
+            const plotData = Object.keys(failedDataMap[plotNo][gourdType]).map((key) => ({
+              value: failedDataMap[plotNo][gourdType][key],
+              dataPointText: failedDataMap[plotNo][gourdType][key].toString(),
+              label: key,
+            }));
 
-              plotData.sort((a, b) => new Date(a.label) - new Date(b.label));
+            plotData.sort((a, b) => new Date(a.label) - new Date(b.label));
 
-              return { variety, data: plotData };
-            });
-
-            return { gourdType, varietiesData };
+            return { gourdType, data: plotData };
           });
 
           return { plotNo, gourdTypesData };
@@ -109,33 +102,28 @@ const FailedPollination = () => {
             {plotData.gourdTypesData && plotData.gourdTypesData.map((gourdData, gourdIndex) => (
               <View key={gourdIndex}>
                 <Text style={styles.subHeader}>Gourd Type: {gourdData.gourdType}</Text>
-                {gourdData.varietiesData && gourdData.varietiesData.map((varietyData, varietyIndex) => (
-                  <View key={varietyIndex}>
-                    <Text style={styles.subHeader}>Variety: {varietyData.variety}</Text>
-                    <ScrollView horizontal>
-                      <View>
-                        <LineChart
-                          data={varietyData.data}
-                          spacing={50}
-                          thickness={2}
-                          color="#0BA5A4"
-                          hideRules
-                          yAxisColor="#0BA5A4"
-                          xAxisColor="#0BA5A4"
-                          xAxisLabelTextStyle={{ color: 'gray', fontSize: 8 }}
-                          yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
-                          noOfSections={4}
-                          startAtZero
-                          adjustForEmptyLabel={true}
-                          width={screenWidth + varietyData.data.length * 30} // Adjusted width for scrolling
-                          dataPointsRadius={6} // Lollipop circle size
-                          dataPointsColor="#0BA5A4" // Lollipop circle color
-                          dataPointsWidth={2} // Line thickness for lollipop
-                        />
-                      </View>
-                    </ScrollView>
+                <ScrollView horizontal>
+                  <View>
+                    <LineChart
+                      data={gourdData.data}
+                      spacing={50}
+                      thickness={2}
+                      color="#0BA5A4"
+                      hideRules
+                      yAxisColor="#0BA5A4"
+                      xAxisColor="#0BA5A4"
+                      xAxisLabelTextStyle={{ color: 'gray', fontSize: 8 }}
+                      yAxisTextStyle={{ color: 'gray', fontSize: 10 }}
+                      noOfSections={4}
+                      startAtZero
+                      adjustForEmptyLabel={true}
+                      width={screenWidth + (Array.isArray(gourdData.data) ? gourdData.data.length : 0) * 30}
+                      dataPointsRadius={6}
+                      dataPointsColor="#0BA5A4"
+                      dataPointsWidth={2}
+                    />
                   </View>
-                ))}
+                </ScrollView>
               </View>
             ))}
             {error && <Text style={styles.error}>{error}</Text>}
