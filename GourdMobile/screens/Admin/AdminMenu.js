@@ -77,16 +77,16 @@ const BUTTONS = [
     iconComponent: <MaterialIcons name="category" size={24} color="#207868" style={styles.icon} />,
     nav: "Categories",
   },
-  {
-    label: "View Gourd Types",
-    iconComponent: <FontAwesome5 name="leaf" size={22} color="#207868" style={styles.icon} />,
-    nav: "GourdType",
-  },
-  {
-    label: "View Gourd Varieties",
-    iconComponent: <FontAwesome5 name="seedling" size={22} color="#207868" style={styles.icon} />,
-    nav: "GourdVarieties",
-  },
+  // {
+  //   label: "View Gourd Types",
+  //   iconComponent: <FontAwesome5 name="leaf" size={22} color="#207868" style={styles.icon} />,
+  //   nav: "GourdType",
+  // },
+  // {
+  //   label: "View Gourd Varieties",
+  //   iconComponent: <FontAwesome5 name="seedling" size={22} color="#207868" style={styles.icon} />,
+  //   nav: "GourdVarieties",
+  // },
   {
     label: "Manage Users",
     iconComponent: <Ionicons name="people" size={24} color="#207868" style={styles.icon} />,
