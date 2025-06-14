@@ -201,16 +201,16 @@ router.put('/:id', upload.fields([
         monitoring.fruitHarvestedImages = fruitHarvestedImages;
         monitoring.fruitsHarvested = fruitHarvestedImages.length;
 
-        if (monitoring.dateOfPollination) {
-            const start = new Date(monitoring.dateOfPollination);
-            let dateOfHarvest = [];
-            for (let i = 0; i < 7; i++) {
-                const day = new Date(start);
-                day.setDate(start.getDate() + 7 + i);
-                dateOfHarvest.push({ date: day, notificationStatus: false });
-            }
-            monitoring.dateOfHarvest = dateOfHarvest;
-        }
+        // if (monitoring.dateOfPollination) {
+        //     const start = new Date(monitoring.dateOfPollination);
+        //     let dateOfHarvest = [];
+        //     for (let i = 0; i < 7; i++) {
+        //         const day = new Date(start);
+        //         day.setDate(start.getDate() + 7 + i);
+        //         dateOfHarvest.push({ date: day, notificationStatus: false });
+        //     }
+        //     monitoring.dateOfHarvest = dateOfHarvest;
+        // }
 
         // Save the document
         await monitoring.save();
