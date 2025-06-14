@@ -100,6 +100,10 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("pushToken", (data) => {
+    console.log("Push token received from client:", data.pushToken);
+  });
+
   // Listen for new messages
 
   socket.on("sendMessage", async (data) => {
