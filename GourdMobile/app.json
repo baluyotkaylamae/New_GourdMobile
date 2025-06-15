@@ -1,21 +1,24 @@
 {
   "expo": {
     "name": "GourdMobile",
-    "slug": "GourdMobile",
+    "slug": "newgourd",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "plugins": [
       "expo-dev-client",
-     ["expo-notifications", {
-        "icon": "./assets/logoNBG.png"
-      }]
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logoNBG.png"
+        }
+      ]
     ],
     "splash": {
       "image": "./assets/logoNBG.png",
       "resizeMode": "contain",
-      "backgroundColor": "#fff"
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true
@@ -24,9 +27,9 @@
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logoNBG.png",
-        "backgroundColor": "#fff"
+        "backgroundColor": "#ffffff"
       },
-      "package": "com.kaylamae.GourdMobile"
+      "package": "gourdtify.com"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,8 +40,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "e2501521-b10f-4d82-bc5d-fe3b3685d487"
+        "projectId": "7adb60a7-79aa-4ac8-8f5f-0bd2f87b7b8f"
       }
-    }
+    },
+    "owner": "ampalaya"
   }
 }

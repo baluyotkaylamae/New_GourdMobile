@@ -1,6 +1,7 @@
 import * as Notifications from "expo-notifications";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from 'expo-constants';
 
 // export const registerForPushNotificationsAsync = async (baseUrl, currentPushToken) => {
 export const registerForPushNotificationsAsync = async (baseUrl, currentPushToken, id) => {
@@ -18,7 +19,28 @@ export const registerForPushNotificationsAsync = async (baseUrl, currentPushToke
     return null;
   }
 
-  const token = (await Notifications.getExpoPushTokenAsync()).data;
+  // const token = (await Notifications.getExpoPushTokenAsync()).data;
+
+  // token = await Notifications.getExpoPushTokenAsync({
+  //   projectId: Constants.expoConfig.extra.eas.projectId,
+  // });
+
+
+  let token;
+  try {
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+
+    if (!projectId) {
+      throw new Error('Project ID not found');
+    }
+    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  } catch (error) {
+    console.error('Error retrieving Expo push token:', error);
+    return null;
+  }
+
+
   const storedToken = await AsyncStorage.getItem('jwt');
   console.log("Push token:", token);
   if (token !== currentPushToken) {

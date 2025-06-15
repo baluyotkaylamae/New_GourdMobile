@@ -306,70 +306,138 @@ const MonitoringScreen = () => {
   };
 
   // Update monitoring record
+  // const updateMonitoring = async () => {
+  //   if (!editMonitoringData) return;
+
+  //   setIsLoading(true);
+
+  //   const storedToken = await AsyncStorage.getItem("jwt");
+  //   let formData = new FormData();
+
+  //   formData.append("gourdType", editMonitoringData.gourdType._id);
+  //   formData.append("dateOfPollination", new Date(editMonitoringData.dateOfPollination).toISOString());
+  //   formData.append("plotNo", editMonitoringData.plotNo);
+
+  //   const start = new Date(editMonitoringData.dateOfPollination);
+  //   formData.append("dateOfHarvestStart", start.toISOString());
+
+  //   for (let i = 0; i < 7; i++) {
+  //     const day = new Date(start);
+  //     day.setDate(start.getDate() + 7 + i);
+  //     formData.append(`dateOfHarvest[${i}][date]`, day.toISOString());
+  //     formData.append(`dateOfHarvest[${i}][notificationStatus]`, false);
+  //   }
+  //   (editMonitoringData.pollinatedFlowerImages || []).forEach((imageObj, index) => {
+  //     if (typeof imageObj === 'object' && imageObj.url && imageObj.url.startsWith("http")) {
+  //       formData.append("pollinatedFlowerImages", JSON.stringify(imageObj));
+  //     } else if (typeof imageObj === 'string' && imageObj.startsWith("http")) {
+  //       formData.append("pollinatedFlowerImages", JSON.stringify({ url: imageObj }));
+  //     } else if (typeof imageObj === 'string') {
+  //       const newImageUri = `file:///${imageObj.split("file:/").join("")}`;
+  //       formData.append("pollinatedFlowerImages", {
+  //         uri: newImageUri,
+  //         type: mime.getType(newImageUri) || 'image/jpeg',
+  //         name: `pollinated_flower_${index}.jpg`,
+  //       });
+  //     }
+  //   });
+
+  //   try {
+  //     const config = {
+  //       headers: {
+  //         "Content-Type": "multipart/form-data",
+  //         Authorization: `Bearer ${storedToken}`,
+  //       },
+  //     };
+  //     const res = await axios.put(`${baseURL}Monitoring/${editMonitoringData._id}`, formData, config);
+  //     setIsLoading(false);
+  //     if (res.status === 200) {
+  //       Toast.show({
+  //         topOffset: 60,
+  //         type: "success",
+  //         text1: "Monitoring Updated",
+  //       });
+  //       setEditModalVisible(false);
+  //       setEditMonitoringData(null);
+  //       fetchMonitoringRecords();
+  //     }
+  //   } catch (error) {
+  //     setIsLoading(false);
+  //     Toast.show({
+  //       type: "error",
+  //       text1: "Error updating monitoring",
+  //       text2: error.response?.data?.message || "Please try again",
+  //     });
+  //   }
+  // };
+
   const updateMonitoring = async () => {
-    if (!editMonitoringData) return;
+  if (!editMonitoringData) return;
 
-    setIsLoading(true);
+  setIsLoading(true);
 
-    const storedToken = await AsyncStorage.getItem("jwt");
-    let formData = new FormData();
+  const storedToken = await AsyncStorage.getItem("jwt");
+  let formData = new FormData();
 
-    formData.append("gourdType", editMonitoringData.gourdType._id);
-    formData.append("dateOfPollination", new Date(editMonitoringData.dateOfPollination).toISOString());
-    formData.append("plotNo", editMonitoringData.plotNo);
+  formData.append("gourdType", editMonitoringData.gourdType._id);
+  formData.append("dateOfPollination", new Date(editMonitoringData.dateOfPollination).toISOString());
+  formData.append("plotNo", editMonitoringData.plotNo);
 
-    const start = new Date(editMonitoringData.dateOfPollination);
-    formData.append("dateOfHarvestStart", start.toISOString());
+  // Add updatedAt field using the phone's current timestamp
+  formData.append("updatedAt", new Date().toISOString());
 
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(start);
-      day.setDate(start.getDate() + 7 + i);
-      formData.append(`dateOfHarvest[${i}][date]`, day.toISOString());
-      formData.append(`dateOfHarvest[${i}][notificationStatus]`, false);
-    }
-    (editMonitoringData.pollinatedFlowerImages || []).forEach((imageObj, index) => {
-      if (typeof imageObj === 'object' && imageObj.url && imageObj.url.startsWith("http")) {
-        formData.append("pollinatedFlowerImages", JSON.stringify(imageObj));
-      } else if (typeof imageObj === 'string' && imageObj.startsWith("http")) {
-        formData.append("pollinatedFlowerImages", JSON.stringify({ url: imageObj }));
-      } else if (typeof imageObj === 'string') {
-        const newImageUri = `file:///${imageObj.split("file:/").join("")}`;
-        formData.append("pollinatedFlowerImages", {
-          uri: newImageUri,
-          type: mime.getType(newImageUri) || 'image/jpeg',
-          name: `pollinated_flower_${index}.jpg`,
-        });
-      }
-    });
+  const start = new Date(editMonitoringData.dateOfPollination);
+  formData.append("dateOfHarvestStart", start.toISOString());
 
-    try {
-      const config = {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${storedToken}`,
-        },
-      };
-      const res = await axios.put(`${baseURL}Monitoring/${editMonitoringData._id}`, formData, config);
-      setIsLoading(false);
-      if (res.status === 200) {
-        Toast.show({
-          topOffset: 60,
-          type: "success",
-          text1: "Monitoring Updated",
-        });
-        setEditModalVisible(false);
-        setEditMonitoringData(null);
-        fetchMonitoringRecords();
-      }
-    } catch (error) {
-      setIsLoading(false);
-      Toast.show({
-        type: "error",
-        text1: "Error updating monitoring",
-        text2: error.response?.data?.message || "Please try again",
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + 7 + i);
+    formData.append(`dateOfHarvest[${i}][date]`, day.toISOString());
+    formData.append(`dateOfHarvest[${i}][notificationStatus]`, false);
+  }
+  (editMonitoringData.pollinatedFlowerImages || []).forEach((imageObj, index) => {
+    if (typeof imageObj === 'object' && imageObj.url && imageObj.url.startsWith("http")) {
+      formData.append("pollinatedFlowerImages", JSON.stringify(imageObj));
+    } else if (typeof imageObj === 'string' && imageObj.startsWith("http")) {
+      formData.append("pollinatedFlowerImages", JSON.stringify({ url: imageObj }));
+    } else if (typeof imageObj === 'string') {
+      const newImageUri = `file:///${imageObj.split("file:/").join("")}`;
+      formData.append("pollinatedFlowerImages", {
+        uri: newImageUri,
+        type: mime.getType(newImageUri) || 'image/jpeg',
+        name: `pollinated_flower_${index}.jpg`,
       });
     }
-  };
+  });
+
+  try {
+    const config = {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${storedToken}`,
+      },
+    };
+    const res = await axios.put(`${baseURL}Monitoring/${editMonitoringData._id}`, formData, config);
+    setIsLoading(false);
+    if (res.status === 200) {
+      Toast.show({
+        topOffset: 60,
+        type: "success",
+        text1: "Monitoring Updated",
+      });
+      setEditModalVisible(false);
+      setEditMonitoringData(null);
+      fetchMonitoringRecords();
+    }
+  } catch (error) {
+    setIsLoading(false);
+    Toast.show({
+      type: "error",
+      text1: "Error updating monitoring",
+      text2: error.response?.data?.message || "Please try again",
+    });
+  }
+};
 
   if (loading) return <ActivityIndicator size="large" color="#0000ff" />;
   if (error) return <Text>{error}</Text>;

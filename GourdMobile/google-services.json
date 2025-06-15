@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "899566003981",
-    "project_id": "gourdtify-9ed4a",
-    "storage_bucket": "gourdtify-9ed4a.firebasestorage.app"
+    "project_number": "883159543935",
+    "project_id": "gourdtify-3aebb",
+    "storage_bucket": "gourdtify-3aebb.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:899566003981:android:ed509c2babf548d6763244",
+        "mobilesdk_app_id": "1:883159543935:android:64adcff43be7d51d024f4a",
         "android_client_info": {
-          "package_name": "com.kaylamae.GourdMobile"
+          "package_name": "gourdtify.com"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDVzdCK852BmrPKNAoRaQO2jCktz-dUTd0"
+          "current_key": "AIzaSyCwO_syuX9CrK0HP7JgQ9xxYCKs9B2Sa78"
         }
       ],
       "services": {
