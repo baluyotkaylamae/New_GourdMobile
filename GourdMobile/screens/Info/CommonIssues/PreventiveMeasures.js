@@ -1,60 +1,68 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, ImageBackground } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');
 
+const heroBg = require('../../../assets/images/pngtree-a-green-colour-bottle-gourd-tip-on-the-sunny-day-in-image_15673491.jpg');
+
 const PreventiveMeasures = () => {
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <View style={styles.iconCircle}>
-            <Icon name="shield-check" size={38} color="#58b368" />
-          </View>
-          <Text style={styles.header}>Common Issues and Pests Affecting Gourds</Text>
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.content}>
-            Growing gourds can come with a variety of challenges, particularly from pests and diseases that can affect plant health and fruit yield. Understanding these common issues and how to manage them is essential for successful gourd cultivation.
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+    >
+      {/* Hero Section */}
+      <ImageBackground
+        source={heroBg}
+        style={styles.hero}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay} />
+        <Text style={styles.heroText}>Preventive Measures</Text>
+      </ImageBackground>
+      <View style={styles.card}>
+        <Text style={styles.content}>
+          Growing gourds can come with a variety of challenges, particularly from pests and diseases that can affect plant health and fruit yield. Understanding these common issues and how to manage them is essential for successful gourd cultivation.
+        </Text>
+        <View style={styles.bulletRow}>
+          <Icon name="alert-circle-outline" size={22} color="#58b368" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Preventive Measures</Text>
           </Text>
-          <View style={styles.bulletRow}>
-            <Icon name="alert-circle-outline" size={22} color="#209150" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Preventive Measures</Text>
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Icon name="sync" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Crop Rotation: </Text>
-              Changing planting locations each season can help disrupt pest life cycles and reduce disease incidence.
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Icon name="sprout" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Companion Planting: </Text>
-              Growing pest-repelling plants alongside gourds can help deter common pests. For example, marigolds are known to repel nematodes and certain beetles.
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Icon name="eye-outline" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Regular Monitoring: </Text>
-              Regularly inspect plants for early signs of pest infestations or disease symptoms. Early detection can lead to more effective control measures.
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Icon name="broom" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Sanitation Practices: </Text>
-              Keeping the garden free of debris and removing infected plants promptly can help prevent the spread of diseases.
-            </Text>
-          </View>
         </View>
-      </ScrollView>
-    </View>
+        <View style={styles.bulletRow}>
+          <Icon name="sync" size={22} color="#58b368" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Crop Rotation: </Text>
+            Changing planting locations each season can help disrupt pest life cycles and reduce disease incidence.
+          </Text>
+        </View>
+        <View style={styles.bulletRow}>
+          <Icon name="sprout" size={22} color="#58b368" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Companion Planting: </Text>
+            Growing pest-repelling plants alongside gourds can help deter common pests. For example, marigolds are known to repel nematodes and certain beetles.
+          </Text>
+        </View>
+        <View style={styles.bulletRow}>
+          <Icon name="eye-outline" size={22} color="#58b368" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Regular Monitoring: </Text>
+            Regularly inspect plants for early signs of pest infestations or disease symptoms. Early detection can lead to more effective control measures.
+          </Text>
+        </View>
+        <View style={styles.bulletRow}>
+          <Icon name="broom" size={22} color="#58b368" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Sanitation Practices: </Text>
+            Keeping the garden free of debris and removing infected plants promptly can help prevent the spread of diseases.
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
   )
 }
 
@@ -70,34 +78,24 @@ const styles = StyleSheet.create({
     maxWidth: Math.min(500, width - 8),
     alignSelf: "center",
   },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 30,
-    marginBottom: 12,
-    paddingHorizontal: 8,
+  hero: {
+    width: width,
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
   },
-  iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#e6f9ed",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
-    shadowColor: "#b5f2c9",
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    elevation: 3,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
-  header: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#209150",
-    textAlign: "left",
-    letterSpacing: 0.3,
-    flexShrink: 1,
+  heroText: {
+    color: '#fff',
+    fontSize: 38,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    zIndex: 1,
+    fontFamily: 'sans-serif',
   },
   card: {
     backgroundColor: "#fff",
@@ -133,13 +131,13 @@ const styles = StyleSheet.create({
   bulletText: {
     flex: 1,
     fontSize: 15,
-    color: "#2C482D",
+    color: "#38734e",
     lineHeight: 24,
     textAlign: "left",
   },
   bold: {
     fontWeight: "bold",
-    color: "#209150",
+    color: "#58b368",
   },
 });
 

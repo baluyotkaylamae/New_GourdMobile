@@ -45,266 +45,392 @@ const InfoMenu = ({ navigation }) => {
     };
 
     const renderChevron = (expanded) => (
-        <Animated.View style={{ transform: [{ rotate: expanded ? "90deg" : "0deg" }] }}>
-            <Icon name="chevron-right" size={23} color="#3C8C3D" />
+        <Animated.View style={{ 
+            transform: [{ rotate: expanded ? "90deg" : "0deg" }],
+            marginLeft: 10
+        }}>
+            <Icon name="chevron-right" size={24} color="#3C8C3D" />
         </Animated.View>
     );
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 30 }}>
-
-            {/* Introduction to Gourds */}
-            <TouchableOpacity style={styles.card} onPress={() => toggleTopic("Introduction")}>
-                <View style={styles.cardRow}>
-                    <View style={styles.iconTitleRow}>
-                        <Icon name={topicIcons.Introduction} size={23} color="#3C8C3D" style={styles.topicIcon} />
-                        <Text style={styles.cardTitle}>Introduction to Gourds</Text>
-                    </View>
-                    {renderChevron(expandedTopics["Introduction"])}
+        <View style={styles.container}>
+            <Text style={styles.header}>Gourd Information</Text>
+            
+            <ScrollView 
+                style={styles.scrollContainer}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Introduction to Gourds */}
+                <View style={styles.cardContainer}>
+                    <TouchableOpacity 
+                        style={styles.cardHeader} 
+                        onPress={() => toggleTopic("Introduction")}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardHeaderContent}>
+                            <Icon name={topicIcons.Introduction} size={24} color="#3C8C3D" style={styles.topicIcon} />
+                            <Text style={styles.cardTitle}>Introduction to Gourds</Text>
+                        </View>
+                        {renderChevron(expandedTopics["Introduction"])}
+                    </TouchableOpacity>
+                    
+                    {expandedTopics["Introduction"] && (
+                        <View style={styles.subtopics}>
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("Definition")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.Definition} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Definition</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("ChaUses")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.ChaUses} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Characteristics and Uses of Gourds</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
-                {expandedTopics["Introduction"] && (
-                    <View style={styles.subtopics}>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("Definition")}>
-                            <Icon name={subtopicIcons.Definition} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Definition</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("ChaUses")}>
-                            <Icon name={subtopicIcons.ChaUses} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Characteristics and Uses of Gourds</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </TouchableOpacity>
 
-            {/* History and Cultural Significance */}
-            <TouchableOpacity style={styles.card} onPress={() => toggleTopic("History")}>
-                <View style={styles.cardRow}>
-                    <View style={styles.iconTitleRow}>
-                        <Icon name={topicIcons.History} size={23} color="#3C8C3D" style={styles.topicIcon} />
-                        <Text style={styles.cardTitle}>History and Cultural Significance of Gourds</Text>
-                    </View>
-                    {renderChevron(expandedTopics["History"])}
+                {/* History and Cultural Significance */}
+                <View style={styles.cardContainer}>
+                    <TouchableOpacity 
+                        style={styles.cardHeader} 
+                        onPress={() => toggleTopic("History")}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardHeaderContent}>
+                            <Icon name={topicIcons.History} size={24} color="#3C8C3D" style={styles.topicIcon} />
+                            <Text style={styles.cardTitle}>History and Cultural Significance</Text>
+                        </View>
+                        {renderChevron(expandedTopics["History"])}
+                    </TouchableOpacity>
+                    
+                    {expandedTopics["History"] && (
+                        <View style={styles.subtopics}>
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("GourdWorld")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.GourdWorld} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Gourds Around the World</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("GourdPhi")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.GourdPhi} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Gourds in the Philippines</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
-                {expandedTopics["History"] && (
-                    <View style={styles.subtopics}>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("GourdWorld")}>
-                            <Icon name={subtopicIcons.GourdWorld} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Gourds Around the World</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("GourdPhi")}>
-                            <Icon name={subtopicIcons.GourdPhi} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Gourds in the Philippines</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </TouchableOpacity>
 
-            {/* Botany of Gourds */}
-            <TouchableOpacity style={styles.card} onPress={() => toggleTopic("Botany")}>
-                <View style={styles.cardRow}>
-                    <View style={styles.iconTitleRow}>
-                        <Icon name={topicIcons.Botany} size={23} color="#3C8C3D" style={styles.topicIcon} />
-                        <Text style={styles.cardTitle}>Botany of Gourds</Text>
-                    </View>
-                    {renderChevron(expandedTopics["Botany"])}
+                {/* Botany of Gourds */}
+                <View style={styles.cardContainer}>
+                    <TouchableOpacity 
+                        style={styles.cardHeader} 
+                        onPress={() => toggleTopic("Botany")}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardHeaderContent}>
+                            <Icon name={topicIcons.Botany} size={24} color="#3C8C3D" style={styles.topicIcon} />
+                            <Text style={styles.cardTitle}>Botany of Gourds</Text>
+                        </View>
+                        {renderChevron(expandedTopics["Botany"])}
+                    </TouchableOpacity>
+                    
+                    {expandedTopics["Botany"] && (
+                        <View style={styles.subtopics}>
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("Anatomy")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.Anatomy} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Anatomy of a Gourd Plant</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("LifeCycle")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.LifeCycle} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Life Cycle of a Gourd Plant</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
-                {expandedTopics["Botany"] && (
-                    <View style={styles.subtopics}>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("Anatomy")}>
-                            <Icon name={subtopicIcons.Anatomy} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Anatomy of a Gourd Plant</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("LifeCycle")}>
-                            <Icon name={subtopicIcons.LifeCycle} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Life Cycle of a Gourd Plant</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </TouchableOpacity>
 
-            {/* Understanding Flower Gender in Gourds */}
-            <TouchableOpacity style={styles.card} onPress={() => toggleTopic("FlowerGender")}>
-                <View style={styles.cardRow}>
-                    <View style={styles.iconTitleRow}>
-                        <Icon name={topicIcons.FlowerGender} size={23} color="#3C8C3D" style={styles.topicIcon} />
-                        <Text style={styles.cardTitle}>Understanding Flower Gender in Gourds</Text>
-                    </View>
-                    {renderChevron(expandedTopics["FlowerGender"])}
+                {/* Understanding Flower Gender in Gourds */}
+                <View style={styles.cardContainer}>
+                    <TouchableOpacity 
+                        style={styles.cardHeader} 
+                        onPress={() => toggleTopic("FlowerGender")}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardHeaderContent}>
+                            <Icon name={topicIcons.FlowerGender} size={24} color="#3C8C3D" style={styles.topicIcon} />
+                            <Text style={styles.cardTitle}>Flower Gender in Gourds</Text>
+                        </View>
+                        {renderChevron(expandedTopics["FlowerGender"])}
+                    </TouchableOpacity>
+                    
+                    {expandedTopics["FlowerGender"] && (
+                        <View style={styles.subtopics}>
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("MaleFemaleFlowers")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.MaleFemaleFlowers} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Male vs. Female Flowers</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("ImportanceFlowers")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.ImportanceFlowers} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Importance in Pollination</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("PollinationProcess")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.PollinationProcess} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Pollination Process</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("PollinationChallenges")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.PollinationChallenges} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Challenges in Pollination</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
-                {expandedTopics["FlowerGender"] && (
-                    <View style={styles.subtopics}>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("MaleFemaleFlowers")}>
-                            <Icon name={subtopicIcons.MaleFemaleFlowers} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Male vs. Female Flowers</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("ImportanceFlowers")}>
-                            <Icon name={subtopicIcons.ImportanceFlowers} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Importance of Male and Female Flowers in Pollination and Fruit Production</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("PollinationProcess")}>
-                            <Icon name={subtopicIcons.PollinationProcess} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Pollination Process</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("PollinationChallenges")}>
-                            <Icon name={subtopicIcons.PollinationChallenges} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Challenges in Pollination</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </TouchableOpacity>
 
-            {/* Types of Gourds in the Philippines */}
-            <TouchableOpacity style={styles.card} onPress={() => toggleTopic("TypesInPhilippines")}>
-                <View style={styles.cardRow}>
-                    <View style={styles.iconTitleRow}>
-                        <Icon name={topicIcons.TypesInPhilippines} size={23} color="#3C8C3D" style={styles.topicIcon} />
-                        <Text style={styles.cardTitle}>Types of Gourds in the Philippines</Text>
-                    </View>
-                    {renderChevron(expandedTopics["TypesInPhilippines"])}
+                {/* Types of Gourds in the Philippines */}
+                <View style={styles.cardContainer}>
+                    <TouchableOpacity 
+                        style={styles.cardHeader} 
+                        onPress={() => toggleTopic("TypesInPhilippines")}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardHeaderContent}>
+                            <Icon name={topicIcons.TypesInPhilippines} size={24} color="#3C8C3D" style={styles.topicIcon} />
+                            <Text style={styles.cardTitle}>Types of Gourds in PH</Text>
+                        </View>
+                        {renderChevron(expandedTopics["TypesInPhilippines"])}
+                    </TouchableOpacity>
+                    
+                    {expandedTopics["TypesInPhilippines"] && (
+                        <View style={styles.subtopics}>
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("BitterGourd")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.BitterGourd} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Bitter Gourd (Ampalaya)</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("SpongeGourd")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.SpongeGourd} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Sponge Gourd (Patola)</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("BottleGourd")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.BottleGourd} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Bottle Gourd (Upo)</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
-                {expandedTopics["TypesInPhilippines"] && (
-                    <View style={styles.subtopics}>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("BitterGourd")}>
-                            <Icon name={subtopicIcons.BitterGourd} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Bitter Gourd (Ampalaya)</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("SpongeGourd")}>
-                            <Icon name={subtopicIcons.SpongeGourd} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Sponge Gourd (Patola)</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("BottleGourd")}>
-                            <Icon name={subtopicIcons.BottleGourd} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Bottle Gourd (Upo)</Text>
-                        </TouchableOpacity>
-                        {/* <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("WaxGourd")}>
-                            <Icon name={subtopicIcons.WaxGourd} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Wax Gourd (Kundol)</Text>
-                        </TouchableOpacity> */}
-                    </View>
-                )}
-            </TouchableOpacity>
 
-            {/* Health Benefits and Nutritional Value */}
-            <TouchableOpacity style={styles.card} onPress={() => toggleTopic("HealthBenefits")}>
-                <View style={styles.cardRow}>
-                    <View style={styles.iconTitleRow}>
-                        <Icon name={topicIcons.HealthBenefits} size={23} color="#3C8C3D" style={styles.topicIcon} />
-                        <Text style={styles.cardTitle}>Health Benefits and Nutritional Value</Text>
-                    </View>
-                    {renderChevron(expandedTopics["HealthBenefits"])}
+                {/* Health Benefits and Nutritional Value */}
+                <View style={styles.cardContainer}>
+                    <TouchableOpacity 
+                        style={styles.cardHeader} 
+                        onPress={() => toggleTopic("HealthBenefits")}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardHeaderContent}>
+                            <Icon name={topicIcons.HealthBenefits} size={24} color="#3C8C3D" style={styles.topicIcon} />
+                            <Text style={styles.cardTitle}>Health Benefits</Text>
+                        </View>
+                        {renderChevron(expandedTopics["HealthBenefits"])}
+                    </TouchableOpacity>
+                    
+                    {expandedTopics["HealthBenefits"] && (
+                        <View style={styles.subtopics}>
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("NutritionalProfile")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.NutritionalProfile} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Nutritional Profile</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("MedicinalUses")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.MedicinalUses} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Medicinal Uses</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
-                {expandedTopics["HealthBenefits"] && (
-                    <View style={styles.subtopics}>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("NutritionalProfile")}>
-                            <Icon name={subtopicIcons.NutritionalProfile} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Nutritional Profile of Each Gourd</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("MedicinalUses")}>
-                            <Icon name={subtopicIcons.MedicinalUses} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Medicinal Uses</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </TouchableOpacity>
 
-            {/* Common Issues and Pests Affecting Gourds */}
-            <TouchableOpacity style={styles.card} onPress={() => toggleTopic("CommonIssues")}>
-                <View style={styles.cardRow}>
-                    <View style={styles.iconTitleRow}>
-                        <Icon name={topicIcons.CommonIssues} size={23} color="#3C8C3D" style={styles.topicIcon} />
-                        <Text style={styles.cardTitle}>Common Issues and Pests Affecting Gourds</Text>
-                    </View>
-                    {renderChevron(expandedTopics["CommonIssues"])}
+                {/* Common Issues and Pests Affecting Gourds */}
+                <View style={styles.cardContainer}>
+                    <TouchableOpacity 
+                        style={styles.cardHeader} 
+                        onPress={() => toggleTopic("CommonIssues")}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardHeaderContent}>
+                            <Icon name={topicIcons.CommonIssues} size={24} color="#3C8C3D" style={styles.topicIcon} />
+                            <Text style={styles.cardTitle}>Common Issues and Pests</Text>
+                        </View>
+                        {renderChevron(expandedTopics["CommonIssues"])}
+                    </TouchableOpacity>
+                    
+                    {expandedTopics["CommonIssues"] && (
+                        <View style={styles.subtopics}>
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("Pests")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.Pests} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Common Pests</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("Diseases")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.Diseases} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Common Diseases</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.subtopicItem} 
+                                onPress={() => navigation.navigate("PreventiveMeasures")}
+                                activeOpacity={0.6}
+                            >
+                                <Icon name={subtopicIcons.PreventiveMeasures} size={20} color="#3C8C3D" />
+                                <Text style={styles.subtopicText}>Preventive Measures</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
-                {expandedTopics["CommonIssues"] && (
-                    <View style={styles.subtopics}>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("Pests")}>
-                            <Icon name={subtopicIcons.Pests} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Common Pests</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("Diseases")}>
-                            <Icon name={subtopicIcons.Diseases} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Common Diseases</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.subtopicRow} onPress={() => navigation.navigate("PreventiveMeasures")}>
-                            <Icon name={subtopicIcons.PreventiveMeasures} size={17} color="#3C8C3D" style={styles.subtopicIcon} />
-                            <Text style={styles.subtopic}>Preventive Measures</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </TouchableOpacity>
-        </ScrollView>
+            </ScrollView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#F5FCF5",
+    },
+    scrollContainer: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingBottom: 30,
     },
     header: {
-        fontSize: 26,
+        fontSize: 24,
         fontWeight: "700",
-        marginBottom: 20,
         color: "#26762A",
         textAlign: "center",
+        marginVertical: 20,
         fontFamily: "serif",
     },
-    card: {
+    cardContainer: {
         backgroundColor: "#FFFFFF",
-        paddingVertical: 15,
-        paddingHorizontal: 15,
-        borderRadius: 15,
-        marginVertical: 10,
-        shadowColor: "#4DA55C",
-        shadowOpacity: 0.12,
-        shadowOffset: { width: 0, height: 5 },
-        shadowRadius: 10,
-        elevation: 5,
-        borderWidth: 1.2,
-        borderColor: "#B5E5B8",
+        borderRadius: 12,
+        marginBottom: 15,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        overflow: 'hidden',
     },
-    cardRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
+    cardHeader: {
+        paddingVertical: 18,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
     },
-    iconTitleRow: {
-        flexDirection: "row",
-        alignItems: "center",
+    cardHeaderContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
         flex: 1,
     },
     topicIcon: {
-        marginRight: 13,
+        marginRight: 12,
     },
     cardTitle: {
-        fontSize: 18,
-        fontWeight: "500",
-        color: "#3C8C3D",
-        fontFamily: "serif",
+        fontSize: 17,
+        fontWeight: "600",
+        color: "#2C482D",
         flexShrink: 1,
     },
     subtopics: {
-        marginTop: 10,
-        paddingLeft: 10,
-        backgroundColor: "#E9F8EB",
-        borderRadius: 10,
-        padding: 10,
+        backgroundColor: "#F8FBF8",
+        borderTopWidth: 1,
+        borderTopColor: "#E8F5E9",
+        paddingVertical: 8,
     },
-    subtopicRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 5,
-        borderRadius: 7,
-        marginBottom: 2,
+    subtopicItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        paddingLeft: 44, // Align with the card title
     },
-    subtopicIcon: {
-        marginRight: 8,
-    },
-    subtopic: {
-        fontSize: 16,
-        color: "#2C482D",
+    subtopicText: {
+        fontSize: 15,
+        color: "#3A563A",
+        marginLeft: 12,
     },
 });
 

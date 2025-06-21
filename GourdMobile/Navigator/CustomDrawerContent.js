@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../assets/common/baseurl';
 import { useNavigation } from '@react-navigation/native';
 import { logoutUser } from '../Context/Actions/Auth.actions';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const CustomDrawerContent = (props) => {
   const context = useContext(AuthGlobal);
@@ -50,10 +51,6 @@ const CustomDrawerContent = (props) => {
       });
 
       await AsyncStorage.removeItem('jwt');
-
-      const tokenAfter = await AsyncStorage.getItem('jwt');
-      console.log('Token after logout:', tokenAfter); 
-      
       logoutUser(context.dispatch);
       navigation.navigate('Login');
     } catch (error) {
@@ -64,86 +61,163 @@ const CustomDrawerContent = (props) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color="#4CAF50" />
       </View>
     );
   }
 
   return (
-    <View style={{flex: 1}}>
-      <DrawerContentScrollView {...props} contentContainerStyle={{paddingBottom: 0}}>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('Home', { screen: 'Home' })}
-        >
-          <View style={styles.headerContainer}>
+    <View style={styles.container}>
+      <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Home', { screen: 'Home' })}
+            style={styles.appNameContainer}
+          >
+            <Image 
+              source={require('../assets/logoNBG.png')} // Replace with your actual logo
+              style={styles.logo}
+            />
             <Text style={styles.headerText}>Gourdtify</Text>
-          </View>
-        </TouchableOpacity>
-        <View style={styles.userInfoContainer}>
-          <Image source={{ uri: userDetails?.image || 'https://via.placeholder.com/50' }} style={styles.userImage} />
-          <Text style={styles.userName}>{userDetails?.name || 'Guest'}</Text>
+          </TouchableOpacity>
         </View>
+
+        <View style={styles.userInfoContainer}>
+          <Image 
+            source={{ uri: userDetails?.image || 'https://via.placeholder.com/150' }} 
+            style={styles.userImage} 
+          />
+          <View style={styles.userTextContainer}>
+            <Text style={styles.userName}>{userDetails?.name || 'Guest User'}</Text>
+            <Text style={styles.userEmail}>{userDetails?.email || ''}</Text>
+          </View>
+        </View>
+
         <View style={styles.divider} />
-        <DrawerItemList {...props} />
+
+        <View style={styles.menuItemsContainer}>
+          <DrawerItemList {...props} />
+        </View>
       </DrawerContentScrollView>
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
+
+      <View style={styles.footerContainer}>
+        <TouchableOpacity 
+          style={styles.logoutButton} 
+          onPress={handleLogout}
+          activeOpacity={0.8}
+        >
+          <Icon name="logout" size={20} color="#fff" style={styles.logoutIcon} />
+          <Text style={styles.logoutButtonText}>Log Out</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    padding: 10,
-    backgroundColor: '#A4B465',
-    alignItems: 'center',
-    justifyContent: 'center',
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  headerText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  userInfoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-  },
-  userImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginHorizontal: 20,
-    marginVertical: 10,
+  scrollContainer: {
+    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  headerContainer: {
+    paddingVertical: 25,
+    paddingHorizontal: 20,
+    backgroundColor: '#4CAF50',
+    borderBottomRightRadius: 20,
+  },
+  appNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
+  },
+  headerText: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    paddingVertical: 25,
+    backgroundColor: '#F8F9FA',
+    margin: 15,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  userImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+  },
+  userTextContainer: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginBottom: 3,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#7F8C8D',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 20,
+    marginVertical: 5,
+  },
+  menuItemsContainer: {
+    marginTop: 10,
+  },
+  footerContainer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F1F1',
   },
   logoutButton: {
-    marginBottom: 24,
-    marginTop: 12,
-    padding: 10,
-    backgroundColor: '#FF3B30',
-    borderRadius: 5,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
+    justifyContent: 'center',
+    backgroundColor: '#E74C3C',
+    paddingVertical: 12,
+    borderRadius: 10,
+    shadowColor: '#E74C3C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoutIcon: {
+    marginRight: 10,
   },
   logoutButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
 });
 

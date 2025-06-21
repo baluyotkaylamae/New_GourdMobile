@@ -1,127 +1,164 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Image, TouchableOpacity, Linking, ImageBackground } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');
 
+const heroBg = require('../../../assets/images/pngtree-a-green-colour-bottle-gourd-tip-on-the-sunny-day-in-image_15673491.jpg');
+const bottleGourdImg = require('../../../assets/Content/upo111.jpg');
+
 const BottleGourd = () => {
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <View style={styles.iconCircle}>
-            <Icon name="food-apple-outline" size={38} color="#58b368" />
-          </View>
-          <Text style={styles.header}>Types of Gourds in the Philippines</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+    >
+      {/* Hero Section */}
+      <ImageBackground
+        source={heroBg}
+        style={styles.hero}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay} />
+        <Text style={styles.heroText}>Upo</Text>
+      </ImageBackground>
+      <View style={styles.card}>
+        {/* Bottle Gourd image at the top */}
+        <Image source={bottleGourdImg} style={styles.gourdImage} />
+        <TouchableOpacity onPress={() => Linking.openURL('https://www.britannica.com/plant/bottle-gourd')}>
+          <Text style={styles.imageCaption}>
+            Source: Britannica
+          </Text>
+        </TouchableOpacity>
+        <Text style={styles.content}>
+          The bottle gourd is another important gourd variety in the Philippines, valued for its culinary versatility and practical uses. Here are some key facts about bottle gourd:
+        </Text>
+        <View style={styles.bulletRow}>
+          <Icon name="leaf" size={22} color="#58b368" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Bottle Gourd (Upo)</Text>
+          </Text>
         </View>
-        <View style={styles.card}>
-          <View style={styles.bulletRow}>
-            <Icon name="leaf" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Bottle Gourd (Upo)</Text>
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Icon name="test-tube" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Scientific Name: </Text>Lagenaria siceraria
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Icon name="text-box-outline" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Description: </Text>
-              Bottle gourd, or upo, is a large, light green gourd with a smooth skin. It has a bulbous shape, resembling a bottle when mature, and has a soft texture when cooked.
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Icon name="silverware-fork-knife" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Uses: </Text>
-              Often featured in dishes like ginataang upo (bottle gourd cooked in coconut milk) or sautéed upo with shrimp. Its neutral flavor makes it versatile in various recipes, where it absorbs the flavors of other ingredients.
-            </Text>
-          </View>
+        <View style={styles.bulletRow}>
+          <Icon name="test-tube" size={22} color="#58b368" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Scientific Name: </Text>Lagenaria siceraria
+          </Text>
         </View>
-      </ScrollView>
-    </View>
+        <View style={styles.bulletRow}>
+          <Icon name="text-box-outline" size={22} color="#58b368" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Description: </Text>
+            Bottle gourd, or upo, is a vine plant with light green, smooth-skinned fruits that are bottle-shaped or long and cylindrical. The flesh is white and mild in flavor.
+          </Text>
+        </View>
+        <View style={styles.bulletRow}>
+          <Icon name="silverware-fork-knife" size={22} color="#58b368" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Uses: </Text>
+            Used in Filipino dishes like tinola (chicken soup with vegetables) and ginisang upo (sautéed bottle gourd). When dried, the hard shell is also used for making containers, utensils, and musical instruments.
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: "#F5FFF8",
-    },
-    scrollContent: {
-      paddingHorizontal: 0,
-      paddingTop: 0,
-      paddingBottom: 34,
-      maxWidth: Math.min(500, width - 8),
-      alignSelf: "center",
-    },
-    headerRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      marginTop: 30,
-      marginBottom: 12,
-      paddingHorizontal: 8,
-    },
-    iconCircle: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: "#e6f9ed",
-      justifyContent: "center",
-      alignItems: "center",
-      marginRight: 14,
-      shadowColor: "#b5f2c9",
-      shadowOpacity: 0.16,
-      shadowRadius: 10,
-      elevation: 3,
-    },
-    header: {
-      fontSize: 26,
-      fontWeight: "700",
-      color: "#209150",
-      textAlign: "left",
-      letterSpacing: 0.3,
-      flexShrink: 1,
-    },
-    card: {
-      backgroundColor: "#fff",
-      marginHorizontal: 18,
-      marginVertical: 10,
-      borderRadius: 18,
-      padding: 22,
-      shadowColor: "#aee4bb",
-      shadowOpacity: 0.12,
-      shadowOffset: { width: 0, height: 5 },
-      shadowRadius: 12,
-      elevation: 3,
-    },
-    bulletRow: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      marginBottom: 14,
-      marginLeft: 2,
-      paddingRight: 4,
-    },
-    bulletIcon: {
-      marginRight: 13,
-      marginTop: 1,
-    },
-    bulletText: {
-      flex: 1,
-      fontSize: 15,
-      color: "#2C482D",
-      lineHeight: 24,
-      textAlign: "left",
-    },
-    bold: {
-      fontWeight: "bold",
-      color: "#209150",
-    },
+  container: {
+    flex: 1,
+    backgroundColor: "#F5FFF8",
+  },
+  scrollContent: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 34,
+    alignItems: "center",
+  },
+  hero: {
+    width: width,
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  heroText: {
+    color: '#fff',
+    fontSize: 38,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    zIndex: 1,
+    fontFamily: 'sans-serif',
+  },
+  card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 18,
+    marginVertical: 10,
+    borderRadius: 18,
+    padding: 22,
+    shadowColor: "#aee4bb",
+    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 5 },
+    shadowRadius: 12,
+    elevation: 3,
+    width: width - 16,
+    alignItems: "center",
+    overflow: 'visible',
+  },
+  gourdImage: {
+    width: "100%",
+    height: 180,
+    borderRadius: 12,
+    marginBottom: 8,
+    resizeMode: "cover",
+    backgroundColor: "#222",
+  },
+  imageCaption: {
+    color: "#bbb",
+    fontSize: 13,
+    fontStyle: "italic",
+    textAlign: "center",
+    marginBottom: 8,
+    textDecorationLine: "underline",
+  },
+  content: {
+    fontSize: 16,
+    color: "#38734e",
+    lineHeight: 26,
+    textAlign: "justify",
+    marginBottom: 16,
+    fontWeight: "400",
+    width: "100%",
+  },
+  bulletRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 14,
+    marginLeft: 2,
+    paddingRight: 4,
+    width: "100%",
+  },
+  bulletIcon: {
+    marginRight: 13,
+    marginTop: 1,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 15,
+    color: "#38734e",
+    lineHeight: 24,
+    textAlign: "left",
+  },
+  bold: {
+    fontWeight: "bold",
+    color: "#58b368",
+  },
 });
 
 export default BottleGourd;

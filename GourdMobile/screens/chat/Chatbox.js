@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useRef, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Modal, Alert, Button } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Modal, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import AuthGlobal from '../../Context/Store/AuthGlobal';
@@ -11,46 +11,60 @@ import { filterBadWords } from '../filteredwords';
 import { socket } from '../../socket/index';
 
 const Chatbox = ({ route }) => {
-  const { userId: receiverId } = route.params; // Receiver ID from navigation params
-  const context = useContext(AuthGlobal); // Access the AuthGlobal context
-  const [messages, setMessages] = useState([]); // Messages for the conversation
-  const [loading, setLoading] = useState(true); // Loading state
-  const [error, setError] = useState(null); // Error state
-  const [newMessage, setNewMessage] = useState(''); // Input for the new message
-  const [visibleTimestamp, setVisibleTimestamp] = useState(null); // ID of the clicked message
-  const flatListRef = useRef(); // Reference for FlatList
-  // const socket = useRef(null); // Socket reference
-  const [isModalVisible, setModalVisible] = useState(false); // Modal visibility
-  const [selectedMessageId, setSelectedMessageId] = useState(null); // Selected message for deletion
+  const { userId: receiverId } = route.params;
+  const context = useContext(AuthGlobal);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [newMessage, setNewMessage] = useState('');
+  const flatListRef = useRef();
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
 
-  const handleLongPress = (messageId) => {
-    setSelectedMessageId(messageId);
-    setModalVisible(true); // Show the modal
+  const handleLongPress = (messageId, senderId) => {
+    // Only allow delete if the message was sent by the current user
+    if (senderId === context.stateUser?.user?.userId) {
+      setSelectedMessageId(messageId);
+      setModalVisible(true);
+    }
   };
 
   const confirmDeleteMessage = () => {
-    deleteMessage(selectedMessageId); // Call deleteMessage function
-    setModalVisible(false); // Close the modal
-    setSelectedMessageId(null); // Reset selected message
+    deleteMessage(selectedMessageId);
+    setModalVisible(false);
+    setSelectedMessageId(null);
   };
 
   const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
+    try {
+      // Handle both string and Date objects
+      const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
 
-    if (date.toDateString() === now.toDateString()) {
-      // If it's today, show only the time
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return 'Just now';
+      }
+
+      const now = new Date();
+      const diffInSeconds = Math.floor((now - date) / 1000);
+
+      // Return relative time for recent messages
+      if (diffInSeconds < 60) return 'Just now';
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+
+      // For older messages, show date/time
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      console.error('Error formatting timestamp:', e);
+      return '';
     }
-
-    const oneWeekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-    if (date >= oneWeekAgo) {
-      // If within the last week, show the weekday and time
-      return date.toLocaleString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
-    }
-
-    // Otherwise, show the date
-    return date.toLocaleDateString();
   };
 
   const fetchMessages = async () => {
@@ -61,41 +75,38 @@ const Chatbox = ({ route }) => {
       const storedToken = await AsyncStorage.getItem('jwt');
       const senderId = context.stateUser?.user?.userId;
 
-      if (!senderId || !storedToken) {
-        throw new Error('Authentication failed');
-      }
+      if (!senderId || !storedToken) throw new Error('Authentication failed');
 
-      // console.log(`Fetching messages between senderId: ${senderId} and receiverId: ${receiverId}`);
       const response = await axios.get(
         `${baseURL}chat/messages/${senderId}/${receiverId}`,
         { headers: { Authorization: `Bearer ${storedToken}` } }
       );
 
-      // console.log('Fetched messages:', response.data);
-      // setMessages(response.data.messages || []);
-      setMessages(response.data.messages.map(message => ({
-        ...message,
-        message: filterBadWords(message.message) // Filter incoming message
-      })) || []);
+      // Sort messages by date (oldest first)
+      const sortedMessages = (response.data.messages || [])
+        .map(message => ({
+          ...message,
+          message: filterBadWords(message.message),
+          createdAt: message.createdAt || new Date()
+        }))
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
-      // Once the messages are fetched, mark them as read
-      await markMessagesAsRead(response.data.messages || []);
+      setMessages(sortedMessages);
+      await markMessagesAsRead(sortedMessages);
 
     } catch (err) {
       if (err.response?.status === 404) {
-        // console.warn('No messages found, setting empty message list');
-        setMessages([]); // No messages yet
+        setMessages([]);
       } else {
-        // console.error('Error fetching messages:', err.response?.data || err.message);
         setError(err.message || 'Failed to load messages');
       }
     } finally {
       setLoading(false);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
   };
 
   useEffect(() => {
-
     fetchMessages();
   }, [receiverId, context.stateUser]);
 
@@ -106,47 +117,44 @@ const Chatbox = ({ route }) => {
     if (!storedToken || !senderId) return;
 
     try {
-      const response = await axios.put(
+      await axios.put(
         `${baseURL}chat/messages/read`,
-        { messages: messages.map(msg => msg._id) }, // Send an array of message IDs
+        { messages: messages.map(msg => msg._id) },
         { headers: { Authorization: `Bearer ${storedToken}` } }
       );
 
-      // console.log('Marked messages as read:', response.data);
-      // Optionally, update the local state to reflect changes
       setMessages(prevMessages =>
-        prevMessages.map(msg => ({ ...msg, isRead: true })) // Update all messages to isRead: true
+        prevMessages.map(msg => ({ ...msg, isRead: true }))
       );
     } catch (err) {
-      // console.error('Error marking messages as read:', err.message);
+      console.error('Error marking messages as read:', err.message);
     }
   };
 
   useFocusEffect(
     useCallback(() => {
       const storedToken = AsyncStorage.getItem('jwt');
-      // socket = io(baseURL, {
-      //   query: { token: storedToken },
-      // });
-
-      // socket.connect();
 
       socket.on('connect', () => {
-        // console.log('Connected to socket server');
+        console.log('Connected to socket server');
       });
-      // console.log(context.stateUser?.user?.userId)
+
       socket.emit('joinRoom', { userId: context.stateUser?.user?.userId, receiverId });
 
-      socket.emit('message', (message) => {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { ...message, message: filterBadWords(message.message) } // Filter incoming message
-        ]);
+      socket.on('message', (message) => {
+        setMessages(prev => {
+          const newMessages = [...prev, {
+            ...message,
+            message: filterBadWords(message.message),
+            createdAt: message.createdAt || new Date()
+          }];
+          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+          return newMessages;
+        });
       });
 
       return () => {
         socket.disconnect();
-        // console.log('Disconnected from socket server');
       };
     }, [receiverId])
   );
@@ -155,21 +163,21 @@ const Chatbox = ({ route }) => {
     if (!newMessage.trim()) return;
 
     const filteredMessage = filterBadWords(newMessage.trim());
-
-    // Check if the message contains filtered words
     if (filteredMessage !== newMessage.trim()) {
-      // Show a warning or prevent the message from being sent
-      // console.warn("Message contains inappropriate content and will not be sent.");
+      Alert.alert('Warning', 'Your message contains inappropriate content');
       return;
     }
 
     const tempMessage = {
-      _id: new Date().toISOString(),
+      _id: new Date().getTime().toString(),
       sender: { _id: context.stateUser?.user?.userId },
       message: filteredMessage,
+      createdAt: new Date()
     };
-    setMessages((prevMessages) => [...prevMessages, tempMessage]);
+
+    setMessages(prev => [...prev, tempMessage]);
     setNewMessage('');
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
       const storedToken = await AsyncStorage.getItem('jwt');
@@ -180,7 +188,7 @@ const Chatbox = ({ route }) => {
       const messageData = {
         sender: senderId,
         user: receiverId,
-        message: newMessage.trim(),
+        message: filteredMessage,
       };
 
       const response = await axios.post(
@@ -189,19 +197,28 @@ const Chatbox = ({ route }) => {
         { headers: { Authorization: `Bearer ${storedToken}` } }
       );
 
-      // console.log(response.data);
-
-      socket.emit('sendMessage', { ...response.data.chat, userId: response.data.chat.user });
+      socket.emit('sendMessage', {
+        ...response.data.chat,
+        userId: response.data.chat.user,
+        createdAt: new Date()
+      });
     } catch (err) {
-      // console.error('Error sending message:', err.message);
+      console.error('Error sending message:', err.message);
+      setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
     }
   };
+
   useEffect(() => {
     socket.on('receiveMessage', (message) => {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { ...message, message: filterBadWords(message.message) }
-      ]);
+      setMessages(prev => {
+        const newMessages = [...prev, {
+          ...message,
+          message: filterBadWords(message.message),
+          createdAt: message.createdAt || new Date()
+        }];
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+        return newMessages;
+      });
     });
     return () => {
       socket.off('receiveMessage');
@@ -212,53 +229,44 @@ const Chatbox = ({ route }) => {
     try {
       const storedToken = await AsyncStorage.getItem('jwt');
 
-      if (!storedToken) {
-        throw new Error('Authentication failed');
-      }
+      if (!storedToken) throw new Error('Authentication failed');
 
       const response = await axios.delete(`${baseURL}chat/${messageId}`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
 
       if (response.data.success) {
-        // Remove the message from local state
-        setMessages((prevMessages) =>
-          prevMessages.filter((chat) => chat._id !== messageId)
-        );
+        setMessages(prev => prev.filter(chat => chat._id !== messageId));
       }
     } catch (err) {
-      // console.error('Error deleting message:', err.message);
+      console.error('Error deleting message:', err.message);
     }
   };
 
   const renderMessage = ({ item }) => {
-    const senderId = item.sender?._id || item.sender?.id;
-    const currentUserId = context.stateUser?.user?.userId;
-    const isMyMessage = senderId === currentUserId;
+    const isMyMessage = item.sender?._id === context.stateUser?.user?.userId;
 
     return (
-      <TouchableOpacity onLongPress={() => handleLongPress(item._id)}>
-        <View
-          style={[
-            styles.messageWrapper,
-            isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper,
-          ]}
-        >
+      <TouchableOpacity
+        onLongPress={() => handleLongPress(item._id, item.sender?._id)}
+        activeOpacity={0.8}
+      >
+        <View style={[
+          styles.messageWrapper,
+          isMyMessage ? styles.myMessageWrapper : styles.otherMessageWrapper,
+        ]}>
           {!isMyMessage && (
             <Image
               source={{ uri: item.sender?.image || 'https://via.placeholder.com/50' }}
-              // onError={(e) => console.log('Image failed to load:', e.nativeEvent.error)}
               style={styles.userAvatar}
             />
           )}
-          <View
-            style={[
-              styles.messageContainer,
-              isMyMessage ? styles.myMessage : styles.otherMessage,
-            ]}
-          >
+          <View style={[
+            styles.messageContainer,
+            isMyMessage ? styles.myMessage : styles.otherMessage,
+          ]}>
             <Text style={styles.messageText}>{item.message}</Text>
-            <Text style={styles.timestamp}>{formatTimestamp(item.createdAt)}</Text>
+            <Text style={styles.timestampText}>{formatTimestamp(item.createdAt)}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -266,47 +274,84 @@ const Chatbox = ({ route }) => {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {/* Render messages */}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
       {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+        </View>
       ) : error ? (
-        <Text style={styles.errorText}>{error}</Text>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={fetchMessages} style={styles.retryButton}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : messages.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No messages yet</Text>
+          <Text style={styles.emptySubtext}>Start the conversation!</Text>
+        </View>
       ) : (
         <FlatList
+          ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item._id?.toString() || Math.random().toString()}
+          keyExtractor={(item) => item._id?.toString()}
           style={styles.messageList}
+          contentContainerStyle={styles.messageListContent}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
       )}
 
-      {/* Input for new messages */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.textInput}
           value={newMessage}
           onChangeText={setNewMessage}
           placeholder="Type your message..."
+          placeholderTextColor="#999"
+          multiline
         />
-        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
-          <Icon name="arrow-right" size={20} color="#fff" />
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            { backgroundColor: newMessage.trim() ? '#4CAF50' : '#CCCCCC' }
+          ]}
+          onPress={sendMessage}
+          disabled={!newMessage.trim()}
+        >
+          <Icon name="paper-plane" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      {/* Modal for confirmation */}
       <Modal
         visible={isModalVisible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text>Do you want to delete this message?</Text>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Delete Message</Text>
+            <Text style={styles.modalText}>Are you sure you want to delete this message?</Text>
             <View style={styles.modalButtons}>
-              <Button title="Cancel" onPress={() => setModalVisible(false)} />
-              <Button title="Okay" onPress={confirmDeleteMessage} />
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={confirmDeleteMessage}
+              >
+                <Text style={styles.confirmButtonText}>Delete</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -315,73 +360,65 @@ const Chatbox = ({ route }) => {
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#F44336',
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#555',
+    marginBottom: 5,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#888',
   },
   messageList: {
     flex: 1,
-    padding: 10,
   },
-  messageContainer: {
-    marginVertical: 5,
-    padding: 10,
-    borderRadius: 10,
-    maxWidth: '70%',
-  },
-  myMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#dcf8c6',
-  },
-  otherMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#f0f0f0',
-  },
-  messageText: {
-    fontSize: 16,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: '#ddd',
-  },
-  textInput: {
-    flex: 1,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  sendButton: {
-    backgroundColor: '#90EE90',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  sendButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    margin: 20,
-  },
-  noMessagesText: {
-    textAlign: 'center',
-    color: '#888',
-    fontSize: 16,
-    margin: 20,
+  messageListContent: {
+    paddingVertical: 15,
+    paddingHorizontal: 10,
   },
   messageWrapper: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+    alignItems: 'flex-end',
+    marginBottom: 8,
+    paddingHorizontal: 10,
   },
   myMessageWrapper: {
     justifyContent: 'flex-end',
@@ -390,33 +427,119 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   userAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 8,
+  },
+  messageContainer: {
+    maxWidth: '75%',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  myMessage: {
+    backgroundColor: '#DCF8C6',
+    borderBottomRightRadius: 2,
+  },
+  otherMessage: {
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 2,
+  },
+  messageText: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 22,
+  },
+  timestampText: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 4,
+    alignSelf: 'flex-end',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+  },
+  textInput: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 120,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 20,
+    marginRight: 10,
+    fontSize: 16,
+    color: '#333',
+  },
+  sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 10,
-  },
-  timestampText: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 5,
-  },
-  modalContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContent: {
-    width: '80%',
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  cancelButton: {
+    backgroundColor: '#EEEEEE',
+  },
+  confirmButton: {
+    backgroundColor: '#F44336',
+  },
+  cancelButtonText: {
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

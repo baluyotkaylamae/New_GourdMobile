@@ -1,47 +1,61 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { View, Text, StyleSheet, ScrollView, Image, Dimensions, ImageBackground } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
+const heroBg = require('../../../assets/images/pngtree-a-green-colour-bottle-gourd-tip-on-the-sunny-day-in-image_15673491.jpg'); // Use your hero background image
+
+const images = {
+  luto: require('../../../assets/Content/luto.jpg'),
+  gamot: require('../../../assets/Content/gamot.jpg'),
+  decoration: require('../../../assets/Content/decoration.jpg'),
+};
+
 function ChaUses() {
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <View style={styles.iconCircle}>
-            <Icon name="star-outline" size={38} color="#58b368" />
-          </View>
-          <Text style={styles.header}>Characteristics & Uses of Gourds</Text>
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.content}>
-            Gourds have been valued across cultures for both their nutritional and practical qualities. Not only are they edible and nutritious, but once dried, many gourds develop a hard outer shell, making them suitable for a variety of non-food uses. Here’s a look at the most common uses of gourds:
-          </Text>
-          <View style={styles.bulletRow}>
-            <Icon name="silverware-fork-knife" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Culinary Uses: </Text>
-              Gourds are widely used in cuisines around the world. Bitter gourd, for instance, is a popular ingredient in Asian dishes due to its unique bitter flavor and health benefits, while sponge gourd is often enjoyed in soups and stir-fries.
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Icon name="pill" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Medicinal Uses: </Text>
-              Many types of gourds are believed to have health benefits. For example, bitter gourd is known for its ability to help regulate blood sugar levels and is high in vitamins A and C, iron, and potassium.
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <Icon name="palette-outline" size={22} color="#3c8c3d" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Decorative & Practical Applications: </Text>
-              In addition to being a source of food, dried gourds have been used for centuries as natural containers for water and seeds, as well as for crafting musical instruments and decorative items.
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {/* Hero Section (scrolls with content) */}
+      <ImageBackground
+        source={heroBg}
+        style={styles.hero}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay} />
+        <Text style={styles.heroText}>Explore The World of Gourds</Text>
+      </ImageBackground>
+      <View style={styles.card}>
+        <Text style={styles.content}>
+          Gourds have been valued across cultures for both their nutritional and practical qualities. Not only are they edible and nutritious, but once dried, many gourds develop a hard outer shell, making them suitable for a variety of non-food uses. Here’s a look at the most common uses of gourds:
+        </Text>
+        <View style={styles.useSection}>
+          <Image source={images.luto} style={styles.useImage} />
+          <View style={styles.useTextContainer}>
+            <Text style={styles.useTitle}>Cooking</Text>
+            <Text style={styles.useDesc}>
+              Gourds are often used as ingredients in various dishes, especially in Asian cuisine.
             </Text>
           </View>
         </View>
-      </ScrollView>
-    </View>
+        <View style={styles.useSection}>
+          <Image source={images.gamot} style={styles.useImage} />
+          <View style={styles.useTextContainer}>
+            <Text style={styles.useTitle}>Medicine</Text>
+            <Text style={styles.useDesc}>
+              Some gourds are used in traditional medicine for their health benefits.
+            </Text>
+          </View>
+        </View>
+        <View style={styles.useSection}>
+          <Image source={images.decoration} style={styles.useImage} />
+          <View style={styles.useTextContainer}>
+            <Text style={styles.useTitle}>Decoration</Text>
+            <Text style={styles.useDesc}>
+              Dried gourds are commonly used as decorative items or containers.
+            </Text>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -51,82 +65,90 @@ const styles = StyleSheet.create({
     backgroundColor: "#F5FFF8",
   },
   scrollContent: {
-    paddingHorizontal: 0,
-    paddingTop: 0,
     paddingBottom: 34,
-    maxWidth: Math.min(500, width - 8),
-    alignSelf: "center",
-  },
-  headerRow: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginTop: 30,
-    marginBottom: 12,
-    paddingHorizontal: 8,
   },
-  iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#e6f9ed",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
-    shadowColor: "#b5f2c9",
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    elevation: 3,
+  hero: {
+    width: width,
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
   },
-  header: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#209150",
-    textAlign: "left",
-    letterSpacing: 0.3,
-    flexShrink: 1,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  heroText: {
+    color: '#fff',
+    fontSize: 44,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    zIndex: 1,
+    fontFamily: 'sans-serif',
   },
   card: {
     backgroundColor: "#fff",
-    marginHorizontal: 18,
+    marginHorizontal: 8,
     marginVertical: 10,
     borderRadius: 18,
-    padding: 22,
+    padding: 16,
     shadowColor: "#aee4bb",
     shadowOpacity: 0.12,
     shadowOffset: { width: 0, height: 5 },
     shadowRadius: 12,
     elevation: 3,
+    alignItems: "center",
+    width: width - 16,
+    overflow: 'visible',
   },
   content: {
     fontSize: 17,
     color: "#38734e",
     lineHeight: 26,
-    textAlign: "justify",
-    marginBottom: 16,
+    textAlign: "left",
     fontWeight: "400",
+    width: "100%",
+    marginBottom: 18,
   },
-  bulletRow: {
+  useSection: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 14,
-    marginLeft: 2,
-    paddingRight: 4,
+    marginBottom: 22,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    width: "100%",
   },
-  bulletIcon: {
-    marginRight: 13,
-    marginTop: 1,
+  useImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 10,
+    marginRight: 14,
+    resizeMode: "cover",
+    backgroundColor: "#222",
   },
-  bulletText: {
+  useTextContainer: {
     flex: 1,
-    fontSize: 15,
-    color: "#2C482D",
-    lineHeight: 24,
+    justifyContent: "center",
+  },
+  useTitle: {
+    fontWeight: "bold",
+    color: "#58b368",
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  useDesc: {
+    color: "#38734e",
+    fontSize: 14,
+    marginBottom: 2,
     textAlign: "left",
   },
-  bold: {
-    fontWeight: "bold",
-    color: "#209150",
+  source: {
+    color: "#bbb",
+    fontSize: 12,
+    fontStyle: "italic",
+    marginTop: 2,
   },
 });
 

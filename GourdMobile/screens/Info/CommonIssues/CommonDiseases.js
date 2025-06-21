@@ -1,30 +1,48 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Image, TouchableOpacity, Linking, ImageBackground } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');
 
+// Images for each disease
+const powderyMildewImg = require('../../../assets/Content/powmildew.jpg');
+const downyMildewImg = require('../../../assets/Content/dowmildew.jpg');
+const bacterialWiltImg = require('../../../assets/Content/bacteriawilt.jpg');
+const heroBg = require('../../../assets/images/pngtree-a-green-colour-bottle-gourd-tip-on-the-sunny-day-in-image_15673491.jpg');
+
 const Diseases = () => {
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <View style={styles.iconCircle}>
-            <Icon name="virus-outline" size={38} color="#e77c7c" />
-          </View>
-          <Text style={styles.header}>Common Issues and Pests Affecting Gourds</Text>
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.content}>
-            Growing gourds can come with a variety of challenges, particularly from pests and diseases that can affect plant health and fruit yield. Understanding these common issues and how to manage them is essential for successful gourd cultivation.
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled={true}
+    >
+      {/* Hero Section */}
+      <ImageBackground
+        source={heroBg}
+        style={styles.hero}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay} />
+        <Text style={styles.heroText}>Common Issues & Diseases</Text>
+      </ImageBackground>
+      <View style={styles.card}>
+        <Text style={styles.content}>
+          Growing gourds can come with a variety of challenges, particularly from pests and diseases that can affect plant health and fruit yield. Understanding these common issues and how to manage them is essential for successful gourd cultivation.
+        </Text>
+        <View style={styles.bulletRow}>
+          <Icon name="alert-circle-outline" size={22} color="#c13f44" style={styles.bulletIcon} />
+          <Text style={styles.bulletText}>
+            <Text style={styles.bold}>Common Diseases</Text>
           </Text>
-          <View style={styles.bulletRow}>
-            <Icon name="alert-circle-outline" size={22} color="#c13f44" style={styles.bulletIcon} />
-            <Text style={styles.bulletText}>
-              <Text style={styles.bold}>Common Diseases</Text>
-            </Text>
-          </View>
-          {/* Powdery Mildew */}
+        </View>
+        {/* Powdery Mildew */}
+        <View style={styles.diseaseSection}>
+          <Image source={powderyMildewImg} style={styles.diseaseImage} />
+          <TouchableOpacity onPress={() => Linking.openURL('https://www.flickr.com/photos/scotnelson/24997141044')}>
+            <Text style={styles.imageCaption}>Source: Flickr</Text>
+          </TouchableOpacity>
           <View style={styles.bulletRow}>
             <Icon name="blur" size={22} color="#c13f44" style={styles.bulletIcon} />
             <Text style={styles.bulletText}>
@@ -43,7 +61,13 @@ const Diseases = () => {
             <Icon name="spray" size={18} color="#e77c7c" style={styles.infoIcon} />
             <Text style={styles.infoText}>Management: Improve air circulation, avoid overhead watering, and apply fungicides if necessary.</Text>
           </View>
-          {/* Downy Mildew */}
+        </View>
+        {/* Downy Mildew */}
+        <View style={styles.diseaseSection}>
+          <Image source={downyMildewImg} style={styles.diseaseImage} />
+          <TouchableOpacity onPress={() => Linking.openURL('https://wiki.bugwood.org/Pseudoperonospora_cubensis_%28downy_mildew_of_cucurbits%29')}>
+            <Text style={styles.imageCaption}>Source: Bugwood Wiki</Text>
+          </TouchableOpacity>
           <View style={styles.bulletRow}>
             <Icon name="blur" size={22} color="#c13f44" style={styles.bulletIcon} />
             <Text style={styles.bulletText}>
@@ -62,7 +86,13 @@ const Diseases = () => {
             <Icon name="spray" size={18} color="#e77c7c" style={styles.infoIcon} />
             <Text style={styles.infoText}>Management: Rotate crops, choose resistant varieties, and apply fungicides as a preventive measure.</Text>
           </View>
-          {/* Bacterial Wilt */}
+        </View>
+        {/* Bacterial Wilt */}
+        <View style={styles.diseaseSection}>
+          <Image source={bacterialWiltImg} style={styles.diseaseImage} />
+          <TouchableOpacity onPress={() => Linking.openURL('https://www.vegetables.cornell.edu/pest-management/keys-for-identifying-vegetable-diseases/cucurbit-key/pumpkin-gourd-disease-key/pumpkin-gourd-wilt-crown-and-general-plant-decline/')}>
+            <Text style={styles.imageCaption}>Source: Cornell CALS</Text>
+          </TouchableOpacity>
           <View style={styles.bulletRow}>
             <Icon name="blur" size={22} color="#c13f44" style={styles.bulletIcon} />
             <Text style={styles.bulletText}>
@@ -82,8 +112,8 @@ const Diseases = () => {
             <Text style={styles.infoText}>Management: Control cucumber beetle populations and remove infected plants to prevent spread.</Text>
           </View>
         </View>
-      </ScrollView>
-    </View>
+      </View>
+    </ScrollView>
   )
 }
 
@@ -98,6 +128,25 @@ const styles = StyleSheet.create({
     paddingBottom: 34,
     maxWidth: Math.min(500, width - 8),
     alignSelf: "center",
+  },
+  hero: {
+    width: width,
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  heroText: {
+    color: '#fff',
+    fontSize: 38,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    zIndex: 1,
+    fontFamily: 'sans-serif',
   },
   headerRow: {
     flexDirection: "row",
@@ -187,6 +236,26 @@ const styles = StyleSheet.create({
     color: "#38734e",
     lineHeight: 22,
     textAlign: "left",
+  },
+  diseaseSection: {
+    marginTop: 18,
+    marginBottom: 10,
+  },
+  diseaseImage: {
+    width: "100%",
+    height: 160,
+    borderRadius: 10,
+    marginBottom: 4,
+    resizeMode: "cover",
+    backgroundColor: "#f4eaea",
+  },
+  imageCaption: {
+    color: "#b53a3a",
+    fontSize: 13,
+    fontStyle: "italic",
+    textAlign: "center",
+    marginBottom: 4,
+    textDecorationLine: "underline",
   },
 });
 
