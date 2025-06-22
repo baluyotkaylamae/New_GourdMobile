@@ -36,7 +36,10 @@ const UserMonitoringSummary = () => {
         return sum + (Array.isArray(item.pollinatedFlowerImages) ? item.pollinatedFlowerImages.length : 0);
     }, 0);
     const totalHarvested = monitorings.reduce((sum, item) => {
-        return sum + (Array.isArray(item.fruitHarvestedImages) ? item.fruitHarvestedImages.length : 0);
+        if (item.status === "Completed" || item.status === "Failed") {
+            return sum + (Array.isArray(item.fruitHarvestedImages) ? item.fruitHarvestedImages.length : 0);
+        }
+        return sum;
     }, 0);
     const successRate = totalPollinated > 0 ? ((totalHarvested / totalPollinated) * 100).toFixed(1) : 0;
 
@@ -61,9 +64,12 @@ const UserMonitoringSummary = () => {
     const renderItem = ({ item }) => {
         const pollinated = Array.isArray(item.pollinatedFlowerImages) ? item.pollinatedFlowerImages.length : 0;
         const harvested = Array.isArray(item.fruitHarvestedImages) ? item.fruitHarvestedImages.length : 0;
-        const failed = pollinated - harvested;
-        const percent = pollinated > 0 ? ((harvested / pollinated) * 100).toFixed(1) : "0.0";
         const status = item.status || "Pending";
+        
+        // Only calculate failed and percent if status is Completed or Failed
+        const shouldShowResults = status === "Completed" || status === "Failed";
+        const failed = shouldShowResults ? pollinated - harvested : 0;
+        const percent = shouldShowResults && pollinated > 0 ? ((harvested / pollinated) * 100).toFixed(1) : "0.0";
         
         const statusColor = {
             "Completed": "#4CAF50",
@@ -107,16 +113,20 @@ const UserMonitoringSummary = () => {
                                 <Text style={styles.statText}>{harvested}</Text>
                                 <Text style={styles.statLabel}>Harvested</Text>
                             </View>
-                            <View style={styles.statItem}>
-                                <Icon name="cancel" size={20} color="#F44336" />
-                                <Text style={styles.statText}>{failed}</Text>
-                                <Text style={styles.statLabel}>Failed</Text>
-                            </View>
-                            <View style={styles.statItem}>
-                                <Icon name="trending-up" size={20} color="#2196F3" />
-                                <Text style={styles.statText}>{percent}%</Text>
-                                <Text style={styles.statLabel}>Success</Text>
-                            </View>
+                            {shouldShowResults && (
+                                <>
+                                    <View style={styles.statItem}>
+                                        <Icon name="cancel" size={20} color="#F44336" />
+                                        <Text style={styles.statText}>{failed}</Text>
+                                        <Text style={styles.statLabel}>Failed</Text>
+                                    </View>
+                                    <View style={styles.statItem}>
+                                        <Icon name="trending-up" size={20} color="#2196F3" />
+                                        <Text style={styles.statText}>{percent}%</Text>
+                                        <Text style={styles.statLabel}>Success</Text>
+                                    </View>
+                                </>
+                            )}
                         </>
                     )}
                 </View>
@@ -140,7 +150,7 @@ const UserMonitoringSummary = () => {
                         )}
 
                         {/* Fruits Harvested Images */}
-                        {status !== "Pending" && item.fruitHarvestedImages?.length > 0 && (
+                        {shouldShowResults && item.fruitHarvestedImages?.length > 0 && (
                             <View style={styles.imageSection}>
                                 <Text style={styles.sectionTitle}>Fruits Harvested</Text>
                                 <View style={styles.imageGrid}>

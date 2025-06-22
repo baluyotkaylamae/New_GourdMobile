@@ -64,7 +64,7 @@ const MainTabs = () => {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="camera-outline" color={color} size={size || 25} />
           ),
-        }}
+        }}r
       />
     </Tab.Navigator>
   );

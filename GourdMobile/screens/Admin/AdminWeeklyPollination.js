@@ -1,95 +1,113 @@
 import React, { useState, useEffect } from 'react';
-import { View, Dimensions, StyleSheet, ScrollView, Text, ActivityIndicator } from 'react-native';
-import { Card } from 'react-native-paper';
+import { 
+  View, 
+  Dimensions, 
+  StyleSheet, 
+  ScrollView, 
+  Text, 
+  Animated, 
+  Easing,
+  RefreshControl,
+  ActivityIndicator
+} from 'react-native';
+import { Card, useTheme, FAB, TouchableRipple } from 'react-native-paper';
 import { BarChart } from 'react-native-gifted-charts';
 import axios from 'axios';
 import baseURL from '../../assets/common/baseurl';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const screenWidth = Dimensions.get('window').width;
+const { width: screenWidth } = Dimensions.get('window');
 
 const WeeklyPollinationAdmin = () => {
+  const theme = useTheme();
   const [weeklyStats, setWeeklyStats] = useState([]);
   const [error, setError] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useState(new Animated.Value(30))[0];
 
   useEffect(() => {
     fetchWeeklyStats();
+    animateScreen();
   }, []);
 
+  const animateScreen = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   const fetchWeeklyStats = async () => {
-    setLoadingStats(true);
     try {
+      setRefreshing(true);
       const storedToken = await AsyncStorage.getItem('jwt');
-      if (!storedToken) {
-        setError('No authentication token found');
-        setLoadingStats(false);
-        return;
-      }
+      if (!storedToken) throw new Error('No authentication token found');
 
       const response = await axios.get(`${baseURL}Monitoring`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
 
       if (Array.isArray(response.data)) {
-        const weeklyDataMap = {};
-
-        response.data.forEach((record) => {
-          const date = new Date(record.dateOfPollination);
-          const weekNumber = getWeekNumber(date);
-          const year = date.getFullYear();
-          const weekYear = `Week ${weekNumber} ${year}`;
-          const plotNo = record.plotNo || 'Unknown Plot';
-          const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
-
-          if (!weeklyDataMap[plotNo]) {
-            weeklyDataMap[plotNo] = {};
-          }
-
-          if (!weeklyDataMap[plotNo][gourdType]) {
-            weeklyDataMap[plotNo][gourdType] = {};
-          }
-
-          const pollinatedCount = record.pollinatedFlowerImages ? record.pollinatedFlowerImages.length : 0;
-          if (weeklyDataMap[plotNo][gourdType][weekYear]) {
-            weeklyDataMap[plotNo][gourdType][weekYear] += pollinatedCount;
-          } else {
-            weeklyDataMap[plotNo][gourdType][weekYear] = pollinatedCount;
-          }        });
-
-        const formattedData = Object.keys(weeklyDataMap).map((plotNo) => {
-          const gourdTypesData = Object.keys(weeklyDataMap[plotNo]).map((gourdType) => {
-            const plotData = Object.keys(weeklyDataMap[plotNo][gourdType]).map((key, index) => ({
-              value: weeklyDataMap[plotNo][gourdType][key],
-              label: key,
-              frontColor: getBarColor(index),
-            }));
-
-            plotData.sort((a, b) => {
-              const [weekA, yearA] = a.label.split(' ').slice(1);
-              const [weekB, yearB] = b.label.split(' ').slice(1);
-
-              return yearA === yearB
-                ? weekA - weekB
-                : yearA - yearB;
-            });
-
-            return { gourdType, data: plotData };
-          });
-
-          return { plotNo, gourdTypesData };
-        });
-
-        setWeeklyStats(formattedData);
+        const weeklyDataMap = processResponseData(response.data);
+        setWeeklyStats(weeklyDataMap);
         setError(null);
       } else {
-        setError('Data is not in expected array format');
+        throw new Error('Data format error');
       }
-    } catch (error) {
-      setError('Failed to fetch statistics');
+    } catch (err) {
+      setError(err.message || 'Failed to fetch statistics');
+    } finally {
+      setLoadingStats(false);
+      setRefreshing(false);
     }
-    setLoadingStats(false);
+  };
+
+  const processResponseData = (data) => {
+    const weeklyDataMap = {};
+    
+    data.forEach((record) => {
+      const date = new Date(record.dateOfPollination);
+      const weekYear = `Week ${getWeekNumber(date)} ${date.getFullYear()}`;
+      const plotNo = record.plotNo || 'Unknown Plot';
+      const gourdType = record.gourdType?.name || 'Unknown Gourd Type';
+      const pollinatedCount = record.pollinatedFlowerImages?.length || 0;
+
+      if (!weeklyDataMap[plotNo]) weeklyDataMap[plotNo] = {};
+      if (!weeklyDataMap[plotNo][gourdType]) weeklyDataMap[plotNo][gourdType] = {};
+      
+      weeklyDataMap[plotNo][gourdType][weekYear] = 
+        (weeklyDataMap[plotNo][gourdType][weekYear] || 0) + pollinatedCount;
+    });
+
+    return Object.entries(weeklyDataMap).map(([plotNo, gourdTypes]) => ({
+      plotNo,
+      gourdTypesData: Object.entries(gourdTypes).map(([gourdType, weeks]) => ({
+        gourdType,
+        data: Object.entries(weeks)
+          .map(([week, value], index) => ({
+            value,
+            label: week,
+            frontColor: getBarColor(index),
+            topLabelComponent: () => (
+              <Text style={styles.barLabel}>{value}</Text>
+            ),
+            labelTextStyle: styles.weekLabel,
+          }))
+          .sort(sortByWeek),
+      })),
+    }));
   };
 
   const getWeekNumber = (date) => {
@@ -98,138 +116,325 @@ const WeeklyPollinationAdmin = () => {
     return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
   };
 
+  const sortByWeek = (a, b) => {
+    const [weekA, yearA] = a.label.split(' ').slice(1);
+    const [weekB, yearB] = b.label.split(' ').slice(1);
+    return yearA === yearB ? weekA - weekB : yearA - yearB;
+  };
+
   const getBarColor = (index) => {
-    const colors = ['#0BA5A4', '#FF6347', '#FFC107', '#4CAF50', '#1976D2', '#6A1B9A'];
+    const colors = [
+      theme.colors.primary, 
+      '#FF6584', 
+      '#FFC107', 
+      '#4CAF50', 
+      '#2196F3', 
+      '#9C27B0'
+    ];
     return colors[index % colors.length];
   };
 
+  const renderChart = (data) => (
+    <BarChart
+      data={data}
+      barWidth={20}
+      barBorderRadius={6}
+      yAxisColor={theme.colors.outline}
+      xAxisColor={theme.colors.outline}
+      xAxisLabelTextStyle={styles.axisLabel}
+      yAxisTextStyle={styles.axisLabel}
+      noOfSections={5}
+      width={Math.max(screenWidth - 60, 100 + data.length * 50)}
+      hideRules
+      showVerticalLines
+      verticalLinesColor={`${theme.colors.primary}20`}
+      isAnimated
+      animationDuration={1200}
+      yAxisLabelWidth={40}
+      initialSpacing={20}
+      spacing={25}
+      barBorderTopLeftRadius={6}
+      barBorderTopRightRadius={6}
+    />
+  );
+
   return (
-    <ScrollView style={styles.bg}>
-      <Text style={styles.screenTitle}>
-        <Icon name="chart-bar" size={22} color="#0BA5A4" /> Weekly Pollination Overview
-      </Text>
+    <Animated.View 
+      style={[
+        styles.container, 
+        { 
+          backgroundColor: theme.colors.background,
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }]
+        }
+      ]}
+    >
+      {/* Gradient-like header using solid color with overlay */}
+      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
+        <View style={styles.headerOverlay} />
+        <View style={styles.headerContent}>
+          <Icon name="chart-bar" size={28} color="white" />
+          <Text style={styles.screenTitle}>Weekly Pollination</Text>
+          <Text style={styles.screenSubtitle}>Visualized Data Overview</Text>
+        </View>
+      </View>
+
       {loadingStats ? (
-        <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#0BA5A4" /></View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Crunching the numbers...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Icon name="alert-circle-outline" size={48} color="#FF6584" />
+          <Text style={styles.errorText}>Oops! {error}</Text>
+          <TouchableRipple
+            style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+            onPress={fetchWeeklyStats}
+          >
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableRipple>
+        </View>
       ) : weeklyStats.length === 0 ? (
-        <Text style={styles.noDataText}>No pollination records found.</Text>
-      ) : weeklyStats.map((plotData, index) => (
-        <Card key={index} style={styles.card}>
-          <Card.Content>
-            <View style={styles.cardTitleRow}>
-              <Icon name="format-list-bulleted-type" size={20} color="#4B5563" />
-              <Text style={styles.header}>Plot #{plotData.plotNo}</Text>
-            </View>
-            {plotData.gourdTypesData.map((gourdData, gourdIndex) => (
-              <View key={gourdIndex}>
-                <Text style={styles.subHeader}>
-                  <Icon name="leaf" size={14} color="#0BA5A4" /> {gourdData.gourdType}
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.chartContainer}>
-                    <BarChart
-                      data={gourdData.data}
-                      barWidth={30}
-                      barBorderRadius={8}
-                      yAxisColor="#0BA5A4"
-                      xAxisColor="#0BA5A4"
-                      xAxisLabelTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
-                      yAxisTextStyle={{ color: '#3d3d3d', fontSize: 9 }}
-                      noOfSections={4}
-                      width={Math.max(screenWidth, 80 + gourdData.data.length * 40)}
-                      hideRules
-                      showVerticalLines
-                      verticalLinesColor="rgba(14,164,164,0.13)"
-                      isAnimated
-                    />
+        <View style={styles.emptyContainer}>
+          <Icon name="database-remove" size={48} color="#A5A5A5" />
+          <Text style={styles.emptyText}>No pollination data available</Text>
+          <Text style={styles.emptyHint}>Start pollinating to see statistics</Text>
+        </View>
+      ) : (
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={fetchWeeklyStats}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
+            />
+          }
+        >
+          {weeklyStats.map((plotData, index) => (
+            <Card 
+              key={index} 
+              style={[styles.card, { backgroundColor: theme.colors.surface }]}
+              mode="elevated"
+            >
+              <Card.Content>
+                <View style={styles.cardHeader}>
+                  <View style={[styles.plotBadge, { backgroundColor: theme.colors.primary }]}>
+                    <Icon name="map-marker" size={16} color="white" />
                   </View>
-                </ScrollView>
-              </View>
-            ))}
-            {error && <Text style={styles.error}>{error}</Text>}
-          </Card.Content>
-        </Card>
-      ))}
-      <View style={{ height: 30 }} />
-    </ScrollView>
+                  <Text style={[styles.plotTitle, { color: theme.colors.text }]}>
+                    Plot #{plotData.plotNo}
+                  </Text>
+                </View>
+
+                {plotData.gourdTypesData.map((gourdData, gourdIndex) => (
+                  <View key={gourdIndex} style={styles.gourdSection}>
+                    <View style={styles.gourdHeader}>
+                      <View style={[
+                        styles.gourdBadge, 
+                        { backgroundColor: getBarColor(gourdIndex) }
+                      ]}>
+                        <Icon name="leaf" size={14} color="white" />
+                      </View>
+                      <Text style={[styles.gourdTitle, { color: theme.colors.text }]}>
+                        {gourdData.gourdType}
+                      </Text>
+                    </View>
+
+                    <ScrollView 
+                      horizontal 
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.chartScrollContainer}
+                    >
+                      {renderChart(gourdData.data)}
+                    </ScrollView>
+                  </View>
+                ))}
+              </Card.Content>
+            </Card>
+          ))}
+        </ScrollView>
+      )}
+
+      <FAB
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        icon="refresh"
+        onPress={fetchWeeklyStats}
+        visible={!loadingStats && !error && weeklyStats.length > 0}
+        color="white"
+      />
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  bg: { backgroundColor: "#f6fafd" },
-  screenTitle: {
-    fontSize: 21,
-    fontWeight: "bold",
-    color: "#0BA5A4",
-    textAlign: "center",
-    marginTop: 22,
-    marginBottom: 10,
-    letterSpacing: 0.2,
-  },
-  card: {
-    margin: 9,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    shadowColor: '#0BA5A4',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.11,
-    shadowRadius: 12,
-    elevation: 6,
-    borderWidth: 1,
-    borderColor: '#e6eced',
-  },
-  cardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-    marginLeft: 2,
+  container: {
+    flex: 1,
   },
   header: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 7,
-    color: '#2A4747',
-    marginLeft: 5,
+    paddingTop: 50,
+    paddingBottom: 30,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    marginBottom: 16,
+    overflow: 'hidden',
   },
-  subHeader: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#0BA5A4',
-    marginTop: 2,
-    marginLeft: 9,
+  headerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
   },
-  chartContainer: {
-    paddingVertical: 6,
-    paddingRight: 8,
-    paddingLeft: 2,
-    marginBottom: 2,
-    marginTop: 2,
-    minHeight: 155,
-    backgroundColor: "#fafdff",
-    borderRadius: 10,
+  headerContent: {
+    alignItems: 'center',
   },
-  noDataText: {
-    fontSize: 16,
-    color: "#888",
-    textAlign: "center",
-    marginTop: 34,
-    marginBottom: 12,
-    fontStyle: "italic"
+  screenTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: 'white',
+    marginTop: 8,
+    letterSpacing: 0.5,
   },
-  error: {
-    color: '#F44336',
-    textAlign: 'center',
-    marginTop: 14,
+  screenSubtitle: {
     fontSize: 14,
-    fontWeight: "600"
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  scrollContainer: {
+    paddingBottom: 24,
+    paddingHorizontal: 16,
+  },
+  card: {
+    borderRadius: 16,
+    marginBottom: 20,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  plotBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  plotTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  gourdSection: {
+    marginBottom: 24,
+  },
+  gourdHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  gourdBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  gourdTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  chartScrollContainer: {
+    paddingVertical: 8,
+    paddingRight: 16,
+  },
+  axisLabel: {
+    fontSize: 10,
+    color: '#A5A5A5',
+  },
+  barLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  weekLabel: {
+    fontSize: 9,
+    color: '#A5A5A5',
+    marginTop: 4,
   },
   loadingContainer: {
-    marginTop: 40,
-    marginBottom: 24,
-    alignItems: "center",
-    justifyContent: "center"
-  }
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 16,
+    color: '#6C63FF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  errorText: {
+    color: '#FF6584',
+    fontSize: 18,
+    marginVertical: 16,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  emptyText: {
+    color: '#6C63FF',
+    fontSize: 18,
+    marginTop: 16,
+    fontWeight: '600',
+  },
+  emptyHint: {
+    color: '#A5A5A5',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    borderRadius: 28,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  retryText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
 });
 
 export default WeeklyPollinationAdmin;
