@@ -182,7 +182,13 @@ cron.schedule("*/2 * * * *", async () => {
       const finalHarvestDate = new Date(lastHarvestDay.date);
 
       // Only update if the final harvest date is in the past
-      if (finalHarvestDate <= now) {
+      const todayMidnight = new Date();
+      todayMidnight.setHours(0, 0, 0, 0);
+
+      const finalHarvestMidnight = new Date(finalHarvestDate);
+      finalHarvestMidnight.setHours(0, 0, 0, 0);
+
+      if (finalHarvestMidnight < todayMidnight) {
         const previousStatus = record.status;
 
         if (!Array.isArray(record.fruitHarvestedImages) || record.fruitHarvestedImages.length === 0) {

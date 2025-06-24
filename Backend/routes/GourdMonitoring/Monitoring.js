@@ -36,6 +36,8 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Create a new monitoring record
+// ...existing code...
+
 router.post('/', upload.fields([
     { name: "pollinatedFlowerImages", maxCount: 20 },
     { name: "fruitHarvestedImages", maxCount: 20 }
@@ -56,15 +58,27 @@ router.post('/', upload.fields([
         const parsedDateOfPollination = new Date(dateOfPollination);
         const start = new Date(dateOfHarvestStart);
 
-        // Generate 7 days for dateOfHarvest
+        // --- Determine offset based on gourd type ---
+        let offset = 7; // Default for Ampalaya
+        // Fetch gourd type name from DB
+        const GourdTypeModel = mongoose.model('GourdType');
+        const gourdTypeDoc = await GourdTypeModel.findById(gourdType);
+        if (gourdTypeDoc && gourdTypeDoc.name) {
+            const name = gourdTypeDoc.name.toLowerCase();
+            if (name === 'ampalaya') offset = 6;
+            else if (name === 'patola') offset = 9;
+            else if (name === 'upo') offset = 14;
+        }
+
+        // Generate 7 days for dateOfHarvest with correct offset
         const dateOfHarvest = [];
         for (let i = 0; i < 7; i++) {
             const day = new Date(start);
-            day.setDate(start.getDate() + 7 + i); // Start 7 days after pollination
+            day.setDate(start.getDate() + offset + i);
             dateOfHarvest.push({ date: day, notificationStatus: false });
         }
 
-        // Handle pollinatedFlowerImages with unique IDs
+        // ...rest of your existing code for images, saving, etc...
         let pollinatedFlowerImages = [];
         if (req.body.pollinatedFlowerImages) {
             let imgs = req.body.pollinatedFlowerImages;
@@ -77,7 +91,6 @@ router.post('/', upload.fields([
                 }
             });
         }
-        // Add new uploaded files as objects (if any)
         if (req.files && req.files.pollinatedFlowerImages) {
             for (const file of req.files.pollinatedFlowerImages) {
                 const result = await cloudinary.uploader.upload(file.path);
@@ -87,8 +100,6 @@ router.post('/', upload.fields([
                 });
             }
         }
-        // monitoring.pollinatedFlowerImages = pollinatedFlowerImages;
-        // Handle fruitHarvestedImages with unique IDs
         let fruitHarvestedImages = [];
         if (req.files && req.files.fruitHarvestedImages) {
             for (const file of req.files.fruitHarvestedImages) {
@@ -99,8 +110,6 @@ router.post('/', upload.fields([
                 });
             }
         }
-
-        // Count totals based on images
         const pollinatedFlowers = pollinatedFlowerImages.length;
         const fruitsHarvested = fruitHarvestedImages.length;
 
@@ -127,6 +136,8 @@ router.post('/', upload.fields([
         res.status(400).json({ message: 'Monitoring validation failed', errors: err.errors });
     }
 });
+
+// ...existing code...
 
 
 // Update a monitoring record by ID
@@ -201,12 +212,24 @@ router.put('/:id', upload.fields([
         monitoring.fruitHarvestedImages = fruitHarvestedImages;
         monitoring.fruitsHarvested = fruitHarvestedImages.length;
 
-        if (monitoring.dateOfPollination) {
+        if (monitoring.dateOfPollination && monitoring.gourdType) {
             const start = new Date(monitoring.dateOfPollination);
+
+            // --- Determine offset based on gourd type ---
+            let offset = 7; // Default for Ampalaya
+            const GourdTypeModel = mongoose.model('GourdType');
+            const gourdTypeDoc = await GourdTypeModel.findById(monitoring.gourdType);
+            if (gourdTypeDoc && gourdTypeDoc.name) {
+                const name = gourdTypeDoc.name.toLowerCase();
+                if (name === 'ampalaya') offset = 6;
+                else if (name === 'patola') offset = 9;
+                else if (name === 'upo') offset = 14;
+            }
+
             let dateOfHarvest = [];
             for (let i = 0; i < 7; i++) {
                 const day = new Date(start);
-                day.setDate(start.getDate() + 7 + i);
+                day.setDate(start.getDate() + offset + i);
                 dateOfHarvest.push({ date: day, notificationStatus: false });
             }
             monitoring.dateOfHarvest = dateOfHarvest;
