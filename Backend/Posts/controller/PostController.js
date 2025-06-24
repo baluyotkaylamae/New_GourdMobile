@@ -127,31 +127,51 @@ exports.getPostById = async (req, res) => {
 
 
 // Update a post by ID
-
 exports.updatePost = async (req, res) => {
     try {
-        const { category, status, ...rest } = req.body; // Extract category, status, and other fields from the body
-
-        // Upload each new image to Cloudinary and get their URLs
-        const newImages = req.files ? req.files.map(file => file.path) : []; // Get the array of image URLs
-
-        // Find the post to update
+        const { category, status, ...rest } = req.body;
         const post = await Post.findById(req.params.id);
-
         if (!post) {
             return res.status(404).json({ message: 'Post not found' });
         }
 
-        // Update the post fields
-        post.title = rest.title || post.title; // Preserve existing values if not provided
+        post.title = rest.title || post.title;
         post.content = rest.content || post.content;
         post.category = category || post.category;
 
-        // Update images array: you can choose to replace or append
-        post.images = [...post.images, ...newImages]; // Append new images to the existing array
+        // Handle images
+        let imagesArr = [];
 
-        const updatedPost = await post.save(); // Save the updated post
+        // 1. Handle images sent as URLs (existing images)
+        if (typeof req.body.images === 'string') {
+            // If empty string, treat as delete all
+            if (req.body.images.trim() === '') {
+                imagesArr = [];
+            } else {
+                imagesArr = [req.body.images];
+            }
+        } else if (Array.isArray(req.body.images)) {
+            imagesArr = req.body.images.filter(Boolean); // Remove any empty strings
+        }
 
+        // 2. Handle new uploaded images
+        if (req.files && req.files.length > 0) {
+            const uploadPromises = req.files.map(async (file) => {
+                const result = await cloudinary.uploader.upload(file.path, {
+                    folder: 'gourdify',
+                    width: 150,
+                    crop: "scale",
+                });
+                return result.secure_url;
+            });
+            const uploadedImages = await Promise.all(uploadPromises);
+            imagesArr = [...imagesArr, ...uploadedImages];
+        }
+
+        // 3. Set images to '' if empty, else to array
+        post.images = imagesArr.length === 0 ? '' : imagesArr;
+
+        const updatedPost = await post.save();
         res.status(200).json(updatedPost);
     } catch (error) {
         res.status(400).json({ message: error.message });
