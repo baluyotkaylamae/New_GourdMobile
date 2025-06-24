@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from 'react';
 import {
   View, Text, FlatList, StyleSheet, ActivityIndicator, Image,
-  TouchableOpacity, Alert, TextInput, Modal, TouchableWithoutFeedback, ScrollView
+  TouchableOpacity, Alert, TextInput, Modal, TouchableWithoutFeedback, ScrollView, RefreshControl
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../../assets/common/baseurl';
@@ -38,6 +38,7 @@ const Profile = ({ navigation }) => {
   const [expandedComments, setExpandedComments] = useState({});
   const [refresh, setRefresh] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // For per-post menu (paper Menu)
   const [visibleMenuId, setVisibleMenuId] = useState(null);
@@ -173,6 +174,37 @@ const Profile = ({ navigation }) => {
       case 'Rejected': return '#e74c3c';
       case 'Pending': return '#f39c12';
       default: return '#7f8c8d';
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setLoading(true);
+    setError(null);
+    try {
+      const storedToken = await AsyncStorage.getItem('jwt');
+      setToken(storedToken);
+      const userId = context?.stateUser?.user?.userId;
+      if (userId && storedToken) {
+        // Fetch user info
+        const userProfileResponse = await fetch(`${baseURL}users/${userId}`, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
+        const userData = await userProfileResponse.json();
+        setUserInfo(userData);
+
+        // Fetch posts
+        const postsResponse = await fetch(`${baseURL}posts/user/${userId}`, {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
+        const data = await postsResponse.json();
+        setPosts(data.posts || data);
+      }
+    } catch (error) {
+      setError('Error refreshing data');
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
     }
   };
 
@@ -374,14 +406,21 @@ const Profile = ({ navigation }) => {
         ? <Text style={styles.errorText}>{error}</Text>
         : <Provider>
           <View style={styles.container}>
-            <ScrollView>
+            <ScrollView
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  colors={["#207868"]}
+                  tintColor="#207868"
+                />
+              }
+            >
               {renderUserInfo()}
               <FlatList
                 data={posts}
                 renderItem={renderForumItem}
                 keyExtractor={item => item._id}
-                onRefresh={triggerRefresh}
-                refreshing={loading}
                 scrollEnabled={false}
               />
             </ScrollView>

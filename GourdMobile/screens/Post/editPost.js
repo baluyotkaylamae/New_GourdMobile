@@ -34,7 +34,7 @@ const EditPost = () => {
         const response = await axios.get(`${baseURL}posts/${postId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         const postData = response.data;
         setTitle(postData.title);
         setContent(postData.content);
@@ -96,14 +96,25 @@ const EditPost = () => {
     formData.append("content", content);
     formData.append("category", selectedCategory);
 
-    images.forEach((imageUri) => {
-      const newImageUri = `file:///${imageUri.split("file:/").join("")}`;
-      formData.append("images", {
-        uri: newImageUri,
-        type: mime.getType(newImageUri) || 'image/jpeg',
-        name: newImageUri.split("/").pop(),
+    if (images.length === 0) {
+      // Explicitly tell backend to clear images
+      formData.append("images", "");
+    } else {
+      images.forEach((imageUri) => {
+        if (imageUri.startsWith("http")) {
+          // Existing image, send as string
+          formData.append("images", imageUri);
+        } else {
+          // New image, send as file
+          const newImageUri = imageUri.startsWith("file://") ? imageUri : `file://${imageUri}`;
+          formData.append("images", {
+            uri: newImageUri,
+            type: mime.getType(newImageUri) || 'image/jpeg',
+            name: newImageUri.split("/").pop(),
+          });
+        }
       });
-    });
+    }
 
     try {
       const token = await AsyncStorage.getItem('jwt');
