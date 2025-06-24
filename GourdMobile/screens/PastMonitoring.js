@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
-  ActivityIndicator, 
-  TouchableOpacity, 
-  Modal, 
-  TextInput, 
-  Image, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Image,
+  ScrollView,
   Pressable,
   RefreshControl,
   Dimensions
@@ -24,6 +24,8 @@ import mime from "mime";
 import DropDownPicker from 'react-native-dropdown-picker';
 import Icon from "react-native-vector-icons/FontAwesome";
 import Toast from "react-native-toast-message";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+
 
 const { width } = Dimensions.get('window');
 
@@ -71,13 +73,13 @@ const PastMonitoring = () => {
       // Filter records that are within their harvest period
       const filteredData = response.data.filter(item => {
         if (!item.dateOfHarvest || item.dateOfHarvest.length < 7) return false;
-        
+
         const firstHarvestDate = new Date(item.dateOfHarvest[0].date);
         firstHarvestDate.setHours(0, 0, 0, 0);
-        
+
         const lastHarvestDate = new Date(item.dateOfHarvest[6].date);
         lastHarvestDate.setHours(0, 0, 0, 0);
-        
+
         // Only show records where today is between first and last harvest date
         return today >= firstHarvestDate && today <= lastHarvestDate;
       });
@@ -142,10 +144,10 @@ const PastMonitoring = () => {
 
       if (!result.canceled && result.assets?.[0]?.uri) {
         if (updateData && updateHarvestedImages.length >= (updateData.pollinatedFlowerImages?.length || 0)) {
-          Toast.show({ 
-            type: "error", 
+          Toast.show({
+            type: "error",
             text1: "Limit reached",
-            text2: "Cannot add more harvested fruits than pollinated flowers" 
+            text2: "Cannot add more harvested fruits than pollinated flowers"
           });
           return;
         }
@@ -161,10 +163,10 @@ const PastMonitoring = () => {
   const saveUpdate = async () => {
     if (!updateData) return;
     if (updateHarvestedImages.length > (updateData.pollinatedFlowerImages?.length || 0)) {
-      Toast.show({ 
-        type: "error", 
+      Toast.show({
+        type: "error",
         text1: "Invalid count",
-        text2: "Harvested fruits cannot exceed pollinated flowers" 
+        text2: "Harvested fruits cannot exceed pollinated flowers"
       });
       return;
     }
@@ -174,7 +176,7 @@ const PastMonitoring = () => {
     try {
       const token = await AsyncStorage.getItem("jwt");
       const formData = new FormData();
-      
+
       formData.append("plotNo", updatePlotNo);
 
       // Add existing images
@@ -183,7 +185,7 @@ const PastMonitoring = () => {
           formData.append("fruitHarvestedImages", JSON.stringify(img));
         }
       });
-      
+
       // Add new images
       updateHarvestedImages.forEach((img, index) => {
         const uri = typeof img === 'string' ? img : img?.url;
@@ -208,15 +210,15 @@ const PastMonitoring = () => {
           Authorization: `Bearer ${token}`,
         },
       };
-      
+
       await axios.put(`${baseURL}Monitoring/${updateData._id}`, formData, config);
-      
+
       Toast.show({
         type: "success",
         text1: "Success",
         text2: "Monitoring updated successfully",
       });
-      
+
       setUpdateModalVisible(false);
       fetchMonitoringData();
     } catch (error) {
@@ -285,21 +287,21 @@ const PastMonitoring = () => {
         <Pressable style={styles.actionSheetOverlay} onPress={closeImageActionSheet}>
           <Pressable style={styles.actionSheetContainer}>
             <Text style={styles.actionSheetTitle}>Add Harvest Image</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionSheetButton}
               onPress={() => pickImage("camera")}
             >
               <Icon name="camera" size={22} color="#3baea0" style={styles.actionSheetIcon} />
               <Text style={styles.actionSheetButtonText}>Take Photo</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionSheetButton}
               onPress={() => pickImage("gallery")}
             >
               <Icon name="image" size={22} color="#3baea0" style={styles.actionSheetIcon} />
               <Text style={styles.actionSheetButtonText}>Choose from Gallery</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionSheetCancelButton}
               onPress={closeImageActionSheet}
             >
@@ -342,30 +344,30 @@ const PastMonitoring = () => {
               <Text style={styles.cardTitle}>{item.gourdType?.name || "No Gourd Type"}</Text>
               <View style={[
                 styles.statusBadge,
-                { 
-                  backgroundColor: 
+                {
+                  backgroundColor:
                     item.status === "Completed" ? "#2ecc71" :
-                    item.status === "Failed" ? "#e74c3c" :
-                    item.status === "In Progress" ? "#3498db" : "#f39c12"
+                      item.status === "Failed" ? "#e74c3c" :
+                        item.status === "In Progress" ? "#3498db" : "#f39c12"
                 }
               ]}>
                 <Text style={styles.statusText}>{item.status}</Text>
               </View>
             </View>
-            
+
             <View style={styles.cardContent}>
               <View style={styles.infoRow}>
                 <Icon name="map-marker" size={14} color="#7f8c8d" />
                 <Text style={styles.infoText}>Plot: {item.plotNo || "N/A"}</Text>
               </View>
-              
+
               <View style={styles.infoRow}>
                 <Icon name="calendar" size={14} color="#7f8c8d" />
                 <Text style={styles.infoText}>
                   Pollinated: {item.dateOfPollination ? new Date(item.dateOfPollination).toLocaleDateString() : "N/A"}
                 </Text>
               </View>
-              
+
               <View style={styles.harvestDatesContainer}>
                 <Text style={styles.sectionTitle}>Harvest Period:</Text>
                 {item.dateOfHarvest && item.dateOfHarvest.length >= 7 && (
@@ -379,31 +381,30 @@ const PastMonitoring = () => {
                   </>
                 )}
               </View>
-              
+
               <View style={styles.statsContainer}>
                 <View style={styles.statItem}>
-                  <Icon name="pagelines" size={16} color="#3baea0" />
+                  <MaterialCommunityIcons name="flower" size={18} color="#3baea0" />
                   <Text style={styles.statText}>
                     {item.pollinatedFlowerImages ? item.pollinatedFlowerImages.length : 0}
                   </Text>
                   <Text style={styles.statLabel}>Flowers</Text>
                 </View>
-                
                 <View style={styles.statItem}>
-                  <Icon name="apple" size={16} color="#3baea0" />
+                  <MaterialCommunityIcons name="fruit-watermelon" size={18} color="#3baea0" />
                   <Text style={styles.statText}>
                     {item.fruitHarvestedImages ? item.fruitHarvestedImages.length : 0}
                   </Text>
-                  <Text style={styles.statLabel}>Fruits</Text>
+                  <Text style={styles.statLabel}>Harvest</Text>
                 </View>
               </View>
-              
+
               {/* Pollinated Flower Images */}
               {item.pollinatedFlowerImages?.length > 0 && (
                 <>
                   <Text style={styles.sectionTitle}>Pollinated Flowers</Text>
-                  <ScrollView 
-                    horizontal 
+                  <ScrollView
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     style={styles.imageScrollView}
                   >
@@ -417,13 +418,13 @@ const PastMonitoring = () => {
                   </ScrollView>
                 </>
               )}
-              
+
               {/* Harvested Fruit Images */}
               {item.fruitHarvestedImages?.length > 0 && (
                 <>
                   <Text style={styles.sectionTitle}>Harvested Fruits</Text>
-                  <ScrollView 
-                    horizontal 
+                  <ScrollView
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     style={styles.imageScrollView}
                   >
@@ -438,7 +439,7 @@ const PastMonitoring = () => {
                 </>
               )}
             </View>
-            
+
             {/* Action Buttons */}
             {!(
               item.status === 'Completed' &&
@@ -446,18 +447,18 @@ const PastMonitoring = () => {
               item.pollinatedFlowerImages &&
               item.fruitHarvestedImages.length === item.pollinatedFlowerImages.length
             ) && (
-              <View style={styles.cardFooter}>
-                {item.status === 'In Progress' && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.editButton]}
-                    onPress={() => handleUpdate(item)}
-                  >
-                    <Icon name="edit" size={16} color="white" />
-                    <Text style={styles.buttonText}>Update</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+                <View style={styles.cardFooter}>
+                  {item.status === 'In Progress' && (
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.editButton]}
+                      onPress={() => handleUpdate(item)}
+                    >
+                      <Icon name="edit" size={16} color="white" />
+                      <Text style={styles.buttonText}>Update</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
           </View>
         )}
         keyExtractor={(item) => item._id}
@@ -475,7 +476,7 @@ const PastMonitoring = () => {
             <Icon name="inbox" size={50} color="#bdc3c7" />
             <Text style={styles.emptyText}>No monitoring records found</Text>
             <Text style={styles.emptySubtext}>
-              {selectedGourdType 
+              {selectedGourdType
                 ? "Try changing your filter"
                 : "No active monitoring records within harvest dates"
               }
@@ -496,12 +497,12 @@ const PastMonitoring = () => {
             {updateData && (
               <>
                 <Text style={styles.modalTitle}>Update Harvest</Text>
-                
+
                 <View style={styles.infoRow}>
                   <Icon name="leaf" size={16} color="#3baea0" />
                   <Text style={styles.infoText}>{updateData.gourdType?.name || "Unknown"}</Text>
                 </View>
-                
+
                 <View style={styles.infoRow}>
                   <Icon name="map-marker" size={16} color="#3baea0" />
                   <TextInput
@@ -512,14 +513,14 @@ const PastMonitoring = () => {
                     placeholderTextColor="#95a5a6"
                   />
                 </View>
-                
+
                 <Text style={styles.sectionTitle}>Harvested Fruits</Text>
                 <Text style={styles.countText}>
                   {updateHarvestedImages.length} of {updateData.pollinatedFlowerImages?.length || 0}
                 </Text>
-                
-                <ScrollView 
-                  horizontal 
+
+                <ScrollView
+                  horizontal
                   showsHorizontalScrollIndicator={false}
                   style={styles.imageScrollView}
                 >
@@ -552,7 +553,7 @@ const PastMonitoring = () => {
                     </TouchableOpacity>
                   )}
                 </ScrollView>
-                
+
                 <View style={styles.modalButtons}>
                   <TouchableOpacity
                     style={[styles.modalButton, styles.cancelButton]}
@@ -561,7 +562,7 @@ const PastMonitoring = () => {
                   >
                     <Text style={styles.modalButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  
+
                   <TouchableOpacity
                     style={[styles.modalButton, styles.saveButton]}
                     onPress={saveUpdate}
