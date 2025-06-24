@@ -170,14 +170,7 @@ const WeeklyPollinationAdmin = () => {
       ]}
     >
       {/* Gradient-like header using solid color with overlay */}
-      <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
-        <View style={styles.headerOverlay} />
-        <View style={styles.headerContent}>
-          <Icon name="chart-bar" size={28} color="white" />
-          <Text style={styles.screenTitle}>Weekly Pollination</Text>
-          <Text style={styles.screenSubtitle}>Visualized Data Overview</Text>
-        </View>
-      </View>
+      
 
       {loadingStats ? (
         <View style={styles.loadingContainer}>

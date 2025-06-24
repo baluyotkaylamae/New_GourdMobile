@@ -187,7 +187,7 @@ const AdminCompletedPollination = () => {
           </Card.Content>
         </Card>
       ))}
-      <Card style={styles.card}>
+      {/* <Card style={styles.card}>
         <Card.Content>
           <View style={styles.successRow}>
             <Icon name="star-circle" size={20} color="#ffc107" style={{ marginRight: 8 }} />
@@ -202,7 +202,7 @@ const AdminCompletedPollination = () => {
           )}
           {error && <Text style={styles.error}>{error}</Text>}
         </Card.Content>
-      </Card>
+      </Card> */}
       <View style={{ height: 30 }} />
     </ScrollView>
   );

@@ -1,44 +1,34 @@
-import React, { useEffect, useState, useContext, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity, RefreshControl } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import AuthGlobal from "../Context/Store/AuthGlobal";
-import baseURL from "../assets/common/baseurl";
+import baseURL from "../../assets/common/baseurl";
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-const UserMonitoringSummary = () => {
-    const context = useContext(AuthGlobal);
-    const userId = context.stateUser.user?.userId;
+const AdminMonitoringDashboard = () => {
     const [monitorings, setMonitorings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expandedCard, setExpandedCard] = useState(null);
-    const [refreshing, setRefreshing] = useState(false);
-
-    const fetchMonitoring = useCallback(async () => {
-        try {
-            const token = await AsyncStorage.getItem("jwt");
-            const res = await axios.get(`${baseURL}Monitoring/${userId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setMonitorings(res.data);
-        } catch (err) {
-            setMonitorings([]);
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, [userId]);
 
     useEffect(() => {
-        fetchMonitoring();
-    }, [fetchMonitoring]);
+        const fetchAllMonitorings = async () => {
+            setLoading(true);
+            try {
+                const token = await AsyncStorage.getItem("jwt");
+                const response = await axios.get(`${baseURL}Monitoring`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setMonitorings(response.data);
+            } catch (err) {
+                console.error("Error fetching monitorings:", err);
+                setMonitorings([]);
+            }
+            setLoading(false);
+        };
+        fetchAllMonitorings();
+    }, []);
 
-    const onRefresh = useCallback(() => {
-        setRefreshing(true);
-        fetchMonitoring();
-    }, [fetchMonitoring]);
-
-    // Calculate totals
+    // Calculate totals across all users
     const totalMonitorings = monitorings.length;
     const totalPollinated = monitorings.reduce((sum, item) => {
         return sum + (Array.isArray(item.pollinatedFlowerImages) ? item.pollinatedFlowerImages.length : 0);
@@ -51,7 +41,7 @@ const UserMonitoringSummary = () => {
     }, 0);
     const successRate = totalPollinated > 0 ? ((totalHarvested / totalPollinated) * 100).toFixed(1) : 0;
 
-    if (loading && !refreshing) {
+    if (loading) {
         return (
             <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#4CAF50" />
@@ -74,7 +64,6 @@ const UserMonitoringSummary = () => {
         const harvested = Array.isArray(item.fruitHarvestedImages) ? item.fruitHarvestedImages.length : 0;
         const status = item.status || "Pending";
         
-        // Only calculate failed and percent if status is Completed or Failed
         const shouldShowResults = status === "Completed" || status === "Failed";
         const failed = shouldShowResults ? pollinated - harvested : 0;
         const percent = shouldShowResults && pollinated > 0 ? ((harvested / pollinated) * 100).toFixed(1) : "0.0";
@@ -95,48 +84,59 @@ const UserMonitoringSummary = () => {
                 activeOpacity={0.9}
             >
                 <View style={styles.cardHeader}>
-                    <View style={styles.gourdInfo}>
-                        <Text style={styles.gourdType}>{item.gourdType?.name || "Unknown"}</Text>
-                        <Text style={styles.dateText}>
-                            {item.dateOfPollination ? new Date(item.dateOfPollination).toLocaleDateString() : "N/A"}
+                    <View style={styles.userInfo}>
+                        <Icon name="person" size={16} color="#555" />
+                        <Text style={styles.userName}>
+                            {item.userID?.name || 'Unknown User'}
                         </Text>
                     </View>
-                    
                     <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
                         <Text style={styles.statusText}>{status}</Text>
                     </View>
                 </View>
 
-                <View style={styles.statsContainer}>
-                    <View style={styles.statItem}>
-                        <Icon name="local-florist" size={20} color="#4CAF50" />
-                        <Text style={styles.statText}>{pollinated}</Text>
-                        <Text style={styles.statLabel}>Pollinated</Text>
+                <View style={styles.cardContent}>
+                    <View style={styles.gourdInfo}>
+                        <Text style={styles.gourdType}>{item.gourdType?.name || "Unknown Gourd"}</Text>
+                        <Text style={styles.plotText}>
+                            Plot: {item.plotNo || 'No plot assigned'}
+                        </Text>
+                        <Text style={styles.dateText}>
+                            {item.dateOfPollination ? new Date(item.dateOfPollination).toLocaleDateString() : "N/A"}
+                        </Text>
                     </View>
 
-                    {status !== "Pending" && (
-                        <>
-                            <View style={styles.statItem}>
-                                <Icon name="spa" size={20} color="#4CAF50" />
-                                <Text style={styles.statText}>{harvested}</Text>
-                                <Text style={styles.statLabel}>Harvested</Text>
-                            </View>
-                            {shouldShowResults && (
-                                <>
-                                    <View style={styles.statItem}>
-                                        <Icon name="cancel" size={20} color="#F44336" />
-                                        <Text style={styles.statText}>{failed}</Text>
-                                        <Text style={styles.statLabel}>Failed</Text>
-                                    </View>
-                                    <View style={styles.statItem}>
-                                        <Icon name="trending-up" size={20} color="#2196F3" />
-                                        <Text style={styles.statText}>{percent}%</Text>
-                                        <Text style={styles.statLabel}>Success</Text>
-                                    </View>
-                                </>
-                            )}
-                        </>
-                    )}
+                    <View style={styles.statsContainer}>
+                        <View style={styles.statItem}>
+                            <Icon name="local-florist" size={20} color="#4CAF50" />
+                            <Text style={styles.statText}>{pollinated}</Text>
+                            <Text style={styles.statLabel}>Pollinated</Text>
+                        </View>
+
+                        {status !== "Pending" && (
+                            <>
+                                <View style={styles.statItem}>
+                                    <Icon name="spa" size={20} color="#4CAF50" />
+                                    <Text style={styles.statText}>{harvested}</Text>
+                                    <Text style={styles.statLabel}>Harvested</Text>
+                                </View>
+                                {shouldShowResults && (
+                                    <>
+                                        <View style={styles.statItem}>
+                                            <Icon name="cancel" size={20} color="#F44336" />
+                                            <Text style={styles.statText}>{failed}</Text>
+                                            <Text style={styles.statLabel}>Failed</Text>
+                                        </View>
+                                        <View style={styles.statItem}>
+                                            <Icon name="trending-up" size={20} color="#2196F3" />
+                                            <Text style={styles.statText}>{percent}%</Text>
+                                            <Text style={styles.statLabel}>Success</Text>
+                                        </View>
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </View>
                 </View>
 
                 {isExpanded && (
@@ -188,35 +188,44 @@ const UserMonitoringSummary = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Your Monitoring History</Text>
             
-            {sortedMonitorings.length > 0 && (
-                <View style={styles.summaryCard}>
-                    <View style={styles.summaryRow}>
-                        <View style={styles.summaryItem}>
-                            <Icon name="assignment" size={24} color="#4CAF50" />
-                            <Text style={styles.summaryNumber}>{totalMonitorings}</Text>
-                            <Text style={styles.summaryLabel}>Monitorings</Text>
-                        </View>
-                        <View style={styles.summaryItem}>
-                            <Icon name="local-florist" size={24} color="#4CAF50" />
-                            <Text style={styles.summaryNumber}>{totalPollinated}</Text>
-                            <Text style={styles.summaryLabel}>Flowers Pollinated</Text>
-                        </View>
-                        <View style={styles.summaryItem}>
-                            <Icon name="trending-up" size={24} color="#2196F3" />
-                            <Text style={styles.summaryNumber}>{successRate}%</Text>
-                            <Text style={styles.summaryLabel}>Success Rate</Text>
-                        </View>
+            <View style={styles.summaryCard}>
+                <View style={styles.summaryRow}>
+                    <View style={styles.summaryItem}>
+                        <Icon name="assignment" size={24} color="#4CAF50" />
+                        <Text style={styles.summaryNumber}>{totalMonitorings}</Text>
+                        <Text style={styles.summaryLabel}>Total Monitorings</Text>
+                    </View>
+                    <View style={styles.summaryItem}>
+                        <Icon name="local-florist" size={24} color="#4CAF50" />
+                        <Text style={styles.summaryNumber}>{totalPollinated}</Text>
+                        <Text style={styles.summaryLabel}>Flowers Pollinated</Text>
+                    </View>
+                    <View style={styles.summaryItem}>
+                        <Icon name="trending-up" size={24} color="#2196F3" />
+                        <Text style={styles.summaryNumber}>{successRate}%</Text>
+                        <Text style={styles.summaryLabel}>Success Rate</Text>
                     </View>
                 </View>
-            )}
+                <View style={styles.summaryRow}>
+                    <View style={styles.summaryItem}>
+                        <Icon name="spa" size={24} color="#4CAF50" />
+                        <Text style={styles.summaryNumber}>{totalHarvested}</Text>
+                        <Text style={styles.summaryLabel}>Fruits Harvested</Text>
+                    </View>
+                    <View style={styles.summaryItem}>
+                        <Icon name="cancel" size={24} color="#F44336" />
+                        <Text style={styles.summaryNumber}>{totalPollinated - totalHarvested}</Text>
+                        <Text style={styles.summaryLabel}>Failed Pollinations</Text>
+                    </View>
+                </View>
+            </View>
 
             {sortedMonitorings.length === 0 ? (
                 <View style={styles.emptyState}>
                     <Icon name="assignment" size={50} color="#BDBDBD" />
                     <Text style={styles.emptyText}>No monitoring records found</Text>
-                    <Text style={styles.emptySubtext}>Your pollination records will appear here</Text>
+                    <Text style={styles.emptySubtext}>Monitoring records from all users will appear here</Text>
                 </View>
             ) : (
                 <FlatList
@@ -225,14 +234,6 @@ const UserMonitoringSummary = () => {
                     renderItem={renderItem}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={["#4CAF50"]}
-                            tintColor="#4CAF50"
-                        />
-                    }
                 />
             )}
         </View>
@@ -272,6 +273,7 @@ const styles = StyleSheet.create({
     summaryRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        marginBottom: 8,
     },
     summaryItem: {
         alignItems: 'center',
@@ -308,21 +310,39 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 12,
     },
+    userInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    userName: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#555',
+        marginLeft: 6,
+    },
+    cardContent: {
+        marginBottom: 8,
+    },
     gourdInfo: {
-        flex: 1,
+        marginBottom: 12,
     },
     gourdType: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#2E7D32',
     },
-    dateText: {
+    plotText: {
         fontSize: 14,
+        color: '#555',
+        marginTop: 4,
+    },
+    dateText: {
+        fontSize: 12,
         color: '#757575',
         marginTop: 4,
     },
     statusBadge: {
-        paddingHorizontal: 12,
+        paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 12,
     },
@@ -338,6 +358,7 @@ const styles = StyleSheet.create({
     },
     statItem: {
         alignItems: 'center',
+        flex: 1,
     },
     statText: {
         fontSize: 16,
@@ -350,16 +371,16 @@ const styles = StyleSheet.create({
         color: '#757575',
     },
     expandedContent: {
-        marginTop: 16,
+        marginTop: 12,
         borderTopWidth: 1,
         borderTopColor: '#EEE',
-        paddingTop: 16,
+        paddingTop: 12,
     },
     imageSection: {
-        marginBottom: 16,
+        marginBottom: 12,
     },
     sectionTitle: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         color: '#333',
         marginBottom: 8,
@@ -369,11 +390,11 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     image: {
-        width: 80,
-        height: 80,
-        borderRadius: 8,
-        marginRight: 8,
-        marginBottom: 8,
+        width: 70,
+        height: 70,
+        borderRadius: 6,
+        marginRight: 6,
+        marginBottom: 6,
         backgroundColor: '#EEE',
     },
     expandButton: {
@@ -400,4 +421,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default UserMonitoringSummary;
+export default AdminMonitoringDashboard;

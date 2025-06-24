@@ -1,72 +1,66 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
-import { MaterialIcons, FontAwesome5, Ionicons, Entypo } from "@expo/vector-icons";
+import { MaterialIcons, Ionicons, Entypo } from "@expo/vector-icons";
 
 // Styles
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#9EBC8A",
-    paddingTop: 38,
-    paddingHorizontal: 0,
+    backgroundColor: "#f8fafc",
+    paddingTop: 20,
   },
   headerSection: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
     alignItems: "center",
-    marginBottom: 18,
-    paddingHorizontal: 22,
-    marginTop: 10,
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#1f6f78",
-    letterSpacing: 2,
-    marginBottom: 4,
-    textTransform: "uppercase",
+    color: "#1e293b",
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 25,
-    color: "#FAF6E9",
-    marginBottom: 8,
-    fontWeight: "500",
-    letterSpacing: 0.3,
+    fontSize: 16,
+    color: "#64748b",
     textAlign: "center",
+    lineHeight: 24,
   },
   menuContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingBottom: 38,
-    paddingHorizontal: 14,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
   },
   button: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 18,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
     paddingVertical: 18,
-    paddingHorizontal: 26,
-    marginVertical: 10,
-    width: "94%",
-    shadowColor: "#207868",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 7,
-    elevation: 3,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    width: "100%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#e9f7f3",
+    borderColor: "#f1f5f9",
   },
-  icon: {
-    marginRight: 15,
-    backgroundColor: "#eafaf2",
-    padding: 8,
-    borderRadius: 14,
+  iconContainer: {
+    backgroundColor: "#f0fdf4",
+    padding: 10,
+    borderRadius: 10,
+    marginRight: 16,
   },
   buttonText: {
-    color: "#207868",
-    fontSize: 19,
-    fontWeight: "700",
-    letterSpacing: 1,
-    textTransform: "capitalize",
+    color: "#1e293b",
+    fontSize: 16,
+    fontWeight: "600",
+    flex: 1,
+  },
+  chevron: {
+    color: "#94a3b8",
   },
 });
 
@@ -74,42 +68,38 @@ const styles = StyleSheet.create({
 const BUTTONS = [
   {
     label: "View Categories",
-    iconComponent: <MaterialIcons name="category" size={24} color="#207868" style={styles.icon} />,
+    iconName: "category",
+    iconLib: MaterialIcons,
     nav: "Categories",
   },
-  // {
-  //   label: "View Gourd Types",
-  //   iconComponent: <FontAwesome5 name="leaf" size={22} color="#207868" style={styles.icon} />,
-  //   nav: "GourdType",
-  // },
-  // {
-  //   label: "View Gourd Varieties",
-  //   iconComponent: <FontAwesome5 name="seedling" size={22} color="#207868" style={styles.icon} />,
-  //   nav: "GourdVarieties",
-  // },
   {
     label: "Manage Users",
-    iconComponent: <Ionicons name="people" size={24} color="#207868" style={styles.icon} />,
+    iconName: "people",
+    iconLib: Ionicons,
     nav: "Users",
   },
   {
-    label: "Archived User",
-    iconComponent: <Ionicons name="archive" size={24} color="#207868" style={styles.icon} />,
+    label: "Archived Users",
+    iconName: "archive",
+    iconLib: Ionicons,
     nav: "ArchiveUser",
   },
   {
     label: "Dashboard",
-    iconComponent: <MaterialIcons name="dashboard" size={24} color="#207868" style={styles.icon} />,
+    iconName: "dashboard",
+    iconLib: MaterialIcons,
     nav: "Dashboard",
   },
   {
     label: "Post Management",
-    iconComponent: <Entypo name="clipboard" size={24} color="#207868" style={styles.icon} />,
+    iconName: "clipboard",
+    iconLib: Entypo,
     nav: "PostManagement",
   },
   {
     label: "Archived Posts",
-    iconComponent: <Entypo name="archive" size={24} color="#207868" style={styles.icon} />,
+    iconName: "archive",
+    iconLib: Entypo,
     nav: "ArchivePost",
   },
 ];
@@ -118,24 +108,32 @@ const AdminMenu = ({ navigation }) => {
   return (
     <View style={styles.screen}>
       <View style={styles.headerSection}>
-        <Text style={styles.title}>Admin Dashboard</Text>
-        <Text style={styles.subtitle}>Welcome, Admin! Select an area to manage.</Text>
+        <Text style={styles.subtitle}>
+          Welcome back! Select an area to manage the application.
+        </Text>
       </View>
+      
       <ScrollView
         contentContainerStyle={styles.menuContainer}
         showsVerticalScrollIndicator={false}
       >
-        {BUTTONS.map((btn, idx) => (
-          <TouchableOpacity
-            key={idx}
-            style={styles.button}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate(btn.nav)}
-          >
-            {btn.iconComponent}
-            <Text style={styles.buttonText}>{btn.label}</Text>
-          </TouchableOpacity>
-        ))}
+        {BUTTONS.map((btn, idx) => {
+          const IconComponent = btn.iconLib;
+          return (
+            <TouchableOpacity
+              key={idx}
+              style={styles.button}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate(btn.nav)}
+            >
+              <View style={styles.iconContainer}>
+                <IconComponent name={btn.iconName} size={20} color="#16a34a" />
+              </View>
+              <Text style={styles.buttonText}>{btn.label}</Text>
+              <MaterialIcons name="chevron-right" size={20} style={styles.chevron} />
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
     </View>
   );
